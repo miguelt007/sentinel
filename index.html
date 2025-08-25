@@ -2,67 +2,56 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>✈️ Voos Ativos</title>
+  <title>Voos Ativos com OpenSky</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 2rem;
-    }
-    .voo {
-      background: #fff;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      border-left: 5px solid #0077cc;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .erro {
-      background: #ffe0e0;
-      border-left: 5px solid #cc0000;
-    }
+    body { font-family: Arial, sans-serif; padding: 2rem; background: #f4f4f4; }
+    .voo { background: #fff; padding: 1rem; margin-bottom: 1rem; border-left: 5px solid #0077cc; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .erro { border-left: 5px solid #cc0000; background: #ffe0e0; }
   </style>
 </head>
 <body>
-  <h1>✈️ Voos Ativos</h1>
-  <div id="voos"></div>
+  <h1>✈️ Voos Ativos com OpenSky</h1>
+  <div id="voos">A carregar...</div>
 
   <script>
-    const registos = ["CS-TNV", "G-RUKC", "CS-TPE"];
-    const token = "jtGYiWbmsmetTGHMKvf0B2axN5qlKV0A"; // substitui pelo teu token real
+    async function carregarHexCodes() {
+      const resposta = await fetch("hexCodes.json");
+      const dados = await resposta.json();
+      return dados.hexCodes.map(h => h.toLowerCase());
+    }
 
-    async function obterVoo(registo) {
-      try {
-        const resposta = await fetch(`https://aeroapi.flightaware.com/aeroapi/flights/${registo}`, {
-          headers: { Authorization: token }
-        });
-        const data = await resposta.json();
-        const vooAtivo = data.flights?.find(v => v.status === "En Route" && v.last_position);
-        return vooAtivo || null;
-      } catch (erro) {
-        console.error(`Erro ao obter voo para ${registo}:`, erro);
-        return null;
-      }
+    async function obterDadosOpenSky() {
+      const resposta = await fetch("https://opensky-network.org/api/states/all");
+      const dados = await resposta.json();
+      return dados.states || [];
     }
 
     async function mostrarVoos() {
       const container = document.getElementById("voos");
-      for (const registo of registos) {
-        const voo = await obterVoo(registo);
+      container.innerHTML = "";
+
+      const hexCodes = await carregarHexCodes();
+      const estados = await obterDadosOpenSky();
+
+      for (const hex of hexCodes) {
+        const estado = estados.find(e => e[0]?.toLowerCase() === hex);
         const div = document.createElement("div");
         div.className = "voo";
 
-        if (voo) {
+        if (estado) {
+          const [icao24, callsign, country, time, lastContact, lon, lat, baroAlt, onGround, velocity, heading] = estado;
           div.innerHTML = `
-            <strong>${registo}</strong><br>
-            Origem: ${voo.origin?.code || "Desconhecida"}<br>
-            Destino: ${voo.destination?.code || "Desconhecido"}<br>
-            Altitude: ${voo.last_position?.altitude} ft<br>
-            Velocidade: ${voo.last_position?.groundspeed} knots<br>
-            Atualizado: ${new Date(voo.last_position?.timestamp * 1000).toLocaleString()}
+            <strong>${callsign?.trim() || "Sem callsign"}</strong> (${icao24.toUpperCase()})<br>
+            País: ${country}<br>
+            Posição: ${lat?.toFixed(4)}, ${lon?.toFixed(4)}<br>
+            Altitude: ${baroAlt ? Math.round(baroAlt) + " m" : "N/A"}<br>
+            Velocidade: ${velocity ? Math.round(velocity) + " m/s" : "N/A"}<br>
+            Direção: ${heading ? Math.round(heading) + "°" : "N/A"}<br>
+            Último contacto: ${new Date(lastContact * 1000).toLocaleString()}
           `;
         } else {
           div.classList.add("erro");
-          div.innerHTML = `⚠️ ${registo}: nenhum voo ativo encontrado.`;
+          div.textContent = `❌ HEX ${hex.toUpperCase()}: sem dados disponíveis no OpenSky.`;
         }
 
         container.appendChild(div);
