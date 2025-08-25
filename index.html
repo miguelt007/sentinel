@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <title>Voos Ativos</title>
+  <title>Voos Ativos com OpenSky</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
@@ -30,25 +30,13 @@
       });
     }
 
-    async function carregarHexCodes() {
-      const resposta = await fetch("hexCodes.json");
-      const dados = await resposta.json();
-      return dados.hexCodes.map(h => h.toLowerCase());
-    }
-
-    async function obterDadosDoServidor() {
-      const resposta = await fetch("/api/flights"); // <-- Chamada ao backend
-      const dados = await resposta.json();
-      return dados.states || [];
-    }
-
     async function mostrarVoos() {
-      const hexCodes = await carregarHexCodes();
-      const estados = await obterDadosDoServidor();
+      const resposta = await fetch("/api/opensky");
+      const dados = await resposta.json();
 
-      estados.forEach(estado => {
+      dados.states.forEach(estado => {
         const [icao24, callsign, country, , lastContact, lon, lat, baroAlt, , velocity, heading] = estado;
-        if (hexCodes.includes(icao24.toLowerCase()) && lat !== null && lon !== null) {
+        if (lat !== null && lon !== null) {
           const marker = L.marker([lat, lon], {
             icon: createRotatedIcon(heading || 0),
           }).addTo(map);
