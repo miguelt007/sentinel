@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     #map { height: 100vh; }
-    .popup-img { width: 200px; }
+    .popup-img { width: 200px; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -14,34 +14,65 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const hexCodes = ["407CAF", "3C6B82", "4CA77E"]; // Exemplo
-
-    const map = L.map('map').setView([38.736946, -9.142685], 6); // Lisboa
+    const map = L.map('map').setView([38.736946, -9.142685], 7); // Lisboa
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    hexCodes.forEach(async hex => {
+    async function carregarHexCodes() {
+      const resposta = await fetch('hexCodes.json');
+      const dados = await resposta.json();
+      return dados.hexCodes.map(h => h.toUpperCase());
+    }
+
+    async function buscarDadosCombinados(hex) {
       try {
         const [hexdbRes, adsbRes] = await Promise.all([
           fetch(`https://hexdb.io/api/v1/aircraft/${hex}`).then(r => r.json()),
           fetch(`https://api.adsbdb.com/v0/aircraft/${hex}`).then(r => r.json())
         ]);
 
-        if (!adsbRes.lat || !adsbRes.lon) return;
+        if (!adsbRes.lat || !adsbRes.lon) return null;
 
-        const marker = L.marker([adsbRes.lat, adsbRes.lon]).addTo(map);
-        const popupContent = `
-          <strong>${hexdbRes.operator || 'Desconhecido'}</strong><br>
-          Tipo: ${hexdbRes.type || 'N/A'}<br>
-          Registo: ${hexdbRes.registration || 'N/A'}<br>
-          Altitude: ${adsbRes.altitude} ft<br>
-          Velocidade: ${adsbRes.speed} kt<br>
-          <img src="${hexdbRes.image}" class="popup-img" />
-        `;
-        marker.bindPopup(popupContent);
-      } catch (err) {
-        console.error(`Erro ao buscar dados para ${hex}:`, err);
+        return {
+          hex,
+          lat: adsbRes.lat,
+          lon: adsbRes.lon,
+          altitude: adsbRes.altitude,
+          speed: adsbRes.speed,
+          track: adsbRes.track,
+          registration: hexdbRes.registration || 'N/A',
+          operator: hexdbRes.operator || 'Desconhecido',
+          type: hexdbRes.type || 'N/A',
+          image: hexdbRes.image || ''
+        };
+      } catch (erro) {
+        console.error(`Erro ao buscar dados para ${hex}:`, erro);
+        return null;
       }
-    });
+    }
+
+    async function mostrarAvioesNoMapa() {
+      const hexCodes = await carregarHexCodes();
+
+      for (const hex of hexCodes) {
+        const dados = await buscarDadosCombinados(hex);
+        if (!dados) continue;
+
+        const popup = `
+          <strong>${dados.operator}</strong><br>
+          Tipo: ${dados.type}<br>
+          Registo: ${dados.registration}<br>
+          Altitude: ${dados.altitude} ft<br>
+          Velocidade: ${dados.speed} kt<br>
+          Direção: ${dados.track}°<br>
+          ${dados.image ? `<img src="${dados.image}" class="popup-img" />` : ''}
+        `;
+
+        const marcador = L.marker([dados.lat, dados.lon]).addTo(map);
+        marcador.bindPopup(popup);
+      }
+    }
+
+    mostrarAvioesNoMapa();
   </script>
 </body>
 </html>
