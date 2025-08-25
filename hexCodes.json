@@ -3,5 +3,4 @@ export const hexCodes = [
   "4CA64E",
   "4CA64F",
   "4CA650",
-  // ...
 ];
