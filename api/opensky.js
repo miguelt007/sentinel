@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     const token = await obterToken();
     const resposta = await axios.get(`https://opensky-network.org/api/states/all?icao24=${hex}`, {
       headers: { Authorization: `Bearer ${token}` },
-      timeout: 10000
+      timeout: 20000
     });
 
     res.status(200).json(resposta.data);
