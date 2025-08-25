@@ -1,64 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <title>Voos Ativos com OpenSky</title>
+  <meta charset="UTF-8" />
+  <title>Voos Ativos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <style>
-    body { font-family: Arial, sans-serif; padding: 2rem; background: #f4f4f4; }
-    .voo { background: #fff; padding: 1rem; margin-bottom: 1rem; border-left: 5px solid #0077cc; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .erro { border-left: 5px solid #cc0000; background: #ffe0e0; }
+    #map {
+      height: 100vh;
+    }
+    .plane-icon {
+      transform-origin: center center;
+    }
   </style>
 </head>
 <body>
-  <h1>✈️ Voos Ativos com OpenSky</h1>
-  <div id="voos">A carregar...</div>
+  <div id="map"></div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    async function carregarHexCodes() {
-      const resposta = await fetch("hexCodes.json");
-      const dados = await resposta.json();
-      return dados.hexCodes.map(h => h.toLowerCase());
+    const map = L.map("map").setView([47, -2], 5); // Centro aproximado da Europa
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(map);
+
+    // Função para criar ícone rotacionado
+    function createRotatedIcon(angle) {
+      return L.divIcon({
+        className: "plane-icon",
+        html: `<img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Airplane_silhouette.png" style="width:30px; transform: rotate(${angle}deg);" />`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      });
     }
 
-    async function obterDadosOpenSky() {
-      const resposta = await fetch("https://opensky-network.org/api/states/all");
-      const dados = await resposta.json();
-      return dados.states || [];
-    }
+    // Dados dos voos
+    const flights = [
+      {
+        callsign: "RUK677D",
+        country: "United Kingdom",
+        lat: 49.5953,
+        lon: -4.0248,
+        altitude: 10973,
+        speed: 242,
+        heading: 10,
+      },
+      {
+        callsign: "TAP828",
+        country: "Portugal",
+        lat: 44.4172,
+        lon: 3.2699,
+        altitude: 10973,
+        speed: 235,
+        heading: 62,
+      },
+    ];
 
-    async function mostrarVoos() {
-      const container = document.getElementById("voos");
-      container.innerHTML = "";
+    // Adiciona cada avião ao mapa
+    flights.forEach((flight) => {
+      const marker = L.marker([flight.lat, flight.lon], {
+        icon: createRotatedIcon(flight.heading),
+      }).addTo(map);
 
-      const hexCodes = await carregarHexCodes();
-      const estados = await obterDadosOpenSky();
-
-      for (const hex of hexCodes) {
-        const estado = estados.find(e => e[0]?.toLowerCase() === hex);
-        const div = document.createElement("div");
-        div.className = "voo";
-
-        if (estado) {
-          const [icao24, callsign, country, time, lastContact, lon, lat, baroAlt, onGround, velocity, heading] = estado;
-          div.innerHTML = `
-            <strong>${callsign?.trim() || "Sem callsign"}</strong> (${icao24.toUpperCase()})<br>
-            País: ${country}<br>
-            Posição: ${lat?.toFixed(4)}, ${lon?.toFixed(4)}<br>
-            Altitude: ${baroAlt ? Math.round(baroAlt) + " m" : "N/A"}<br>
-            Velocidade: ${velocity ? Math.round(velocity) + " m/s" : "N/A"}<br>
-            Direção: ${heading ? Math.round(heading) + "°" : "N/A"}<br>
-            Último contacto: ${new Date(lastContact * 1000).toLocaleString()}
-          `;
-        } else {
-          div.classList.add("erro");
-          div.textContent = `❌ HEX ${hex.toUpperCase()}: sem dados disponíveis no OpenSky.`;
-        }
-
-        container.appendChild(div);
-      }
-    }
-
-    mostrarVoos();
+      marker.bindPopup(`
+        <strong>${flight.callsign}</strong><br/>
+        País: ${flight.country}<br/>
+        Altitude: ${flight.altitude} m<br/>
+        Velocidade: ${flight.speed} m/s<br/>
+        Direção: ${flight.heading}°
+      `);
+    });
   </script>
 </body>
 </html>
