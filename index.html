@@ -1,54 +1,52 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <title>Voos Ativos com OpenSky</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <meta charset="UTF-8">
+  <title>Voos OpenSky</title>
   <style>
-    #map { height: 100vh; }
-    .plane-icon { transform-origin: center center; }
+    #mapa {
+      height: 100vh;
+      width: 100%;
+    }
   </style>
+  <!-- Inclui Leaflet para o mapa -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-  <div id="map"></div>
+  <div id="mapa"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map("map").setView([39.67604, -8.14577], 8); // Vila de Rei
+    // Hex codes embutidos diretamente
+    const hexCodes = [
+      "407CAF",
+      "4952CD",
+      "4CA77F"
+    ].map(h => h.toLowerCase());
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-    }).addTo(map);
+    // Inicializa o mapa
+    const mapa = L.map('mapa').setView([38.736946, -9.142685], 6); // Lisboa como centro
 
-    function createRotatedIcon(angle) {
-      return L.divIcon({
-        className: "plane-icon",
-        html: `<img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Airplane_silhouette.png" style="width:30px; transform: rotate(${angle}deg);" />`,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      });
-    }
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(mapa);
 
-    async function mostrarVoos() {
+    // Função para obter dados da API
+    async function obterDadosOpenSky() {
       const resposta = await fetch("/api/opensky");
       const dados = await resposta.json();
+      return dados.states || [];
+    }
 
-      dados.states.forEach(estado => {
-        const [icao24, callsign, country, , lastContact, lon, lat, baroAlt, , velocity, heading] = estado;
-        if (lat !== null && lon !== null) {
-          const marker = L.marker([lat, lon], {
-            icon: createRotatedIcon(heading || 0),
-          }).addTo(map);
+    // Mostrar voos no mapa
+    async function mostrarVoos() {
+      const estados = await obterDadosOpenSky();
 
-          marker.bindPopup(`
-            <strong>${callsign?.trim() || icao24.toUpperCase()}</strong><br/>
-            País: ${country}<br/>
-            Altitude: ${baroAlt ? Math.round(baroAlt) + " m" : "N/A"}<br/>
-            Velocidade: ${velocity ? Math.round(velocity) + " m/s" : "N/A"}<br/>
-            Direção: ${heading ? Math.round(heading) + "°" : "N/A"}<br/>
-            Último contacto: ${new Date(lastContact * 1000).toLocaleString()}
-          `);
+      estados.forEach(estado => {
+        const [icao24, , , , , lon, lat, , , , heading] = estado;
+        if (hexCodes.includes(icao24.toLowerCase()) && lat !== null && lon !== null) {
+          const marcador = L.marker([lat, lon]).addTo(mapa);
+          marcador.bindPopup(`ICAO24: ${icao24}<br>Heading: ${heading}`);
         }
       });
     }
