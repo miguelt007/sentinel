@@ -2,59 +2,33 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <title>Rastreador de Aeronaves</title>
+  <title>Mapa com Ícone Rotativo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; }
-    #mapa { height: 100vh; width: 100vw; }
-    #painel {
-      position: absolute;
-      top: 10px; left: 10px;
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      z-index: 1000;
-      width: 220px;
-    }
-    input, button {
-      margin-top: 5px;
+    #mapa {
+      height: 100vh;
       width: 100%;
-      padding: 6px;
-      font-size: 14px;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-      margin-top: 10px;
-    }
-    li {
-      margin-bottom: 5px;
-      font-size: 14px;
     }
     .icone-aviao {
-      transition: transform 0.3s ease;
+      transition: transform 0.2s ease;
     }
   </style>
 </head>
 <body>
-  <div id="painel">
-    <h3>✈️ Hex Codes</h3>
-    <input type="text" id="novoHex" placeholder="Ex: 4ca77c" />
-    <button onclick="adicionarHex()">Adicionar</button>
-    <ul id="listaHex"></ul>
-  </div>
   <div id="mapa"></div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const mapa = L.map('mapa').setView([39.5, -8.0], 7);
+    const mapa = L.map('mapa').setView([38.7, -9.3], 10);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
+      attribution: '© OpenStreetMap',
     }).addTo(mapa);
 
-    let hexCodes = ['4ca77c']; // Hex codes iniciais
     const marcadores = {};
 
     function criarIconeAviao() {
@@ -76,6 +50,7 @@
         const el = marcador.getElement();
         if (el) {
           el.style.transform = `rotate(${angulo}deg)`;
+          el.style.transformOrigin = 'center center';
         } else {
           setTimeout(aplicar, 100);
         }
@@ -83,79 +58,20 @@
       aplicar();
     }
 
-    function adicionarHex() {
-      const hex = document.getElementById("novoHex").value.trim().toLowerCase();
-      if (hex && !hexCodes.includes(hex)) {
-        hexCodes.push(hex);
-        atualizarLista();
-        buscarDados();
-      }
-      document.getElementById("novoHex").value = "";
-    }
-
-    function removerHex(hex) {
-      hexCodes = hexCodes.filter(h => h !== hex);
-      atualizarLista();
+    function atualizarAeronave(hex, latitude, longitude, trueTrack, texto) {
+      const icone = criarIconeAviao();
       if (marcadores[hex]) {
-        mapa.removeLayer(marcadores[hex]);
-        delete marcadores[hex];
+        marcadores[hex].setLatLng([latitude, longitude]).setIcon(icone).setPopupContent(texto);
+        aplicarRotacao(marcadores[hex], trueTrack || 0);
+      } else {
+        const marcador = L.marker([latitude, longitude], { icon: icone }).addTo(mapa).bindPopup(texto);
+        marcadores[hex] = marcador;
+        aplicarRotacao(marcador, trueTrack || 0);
       }
     }
 
-    function atualizarLista() {
-      const ul = document.getElementById("listaHex");
-      ul.innerHTML = "";
-      hexCodes.forEach(hex => {
-        const li = document.createElement("li");
-        li.innerHTML = `${hex} <button onclick="removerHex('${hex}')">Remover</button>`;
-        ul.appendChild(li);
-      });
-    }
-
-    async function buscarDados() {
-      for (const hex of hexCodes) {
-        try {
-          const url = `https://opensky-network.org/api/states/all?icao24=${hex}`;
-          const resposta = await fetch(url);
-          const dados = await resposta.json();
-          const estado = dados.states && dados.states[0];
-          if (!estado) continue;
-
-          const [
-            , callsign, originCountry, , ,
-            longitude, latitude, baroAltitude, onGround, velocity, trueTrack
-          ] = estado;
-
-          if (!latitude || !longitude) continue;
-
-          const texto = `
-            <strong>${callsign || "Sem callsign"}</strong><br>
-            País: ${originCountry}<br>
-            Altitude: ${baroAltitude ? baroAltitude.toFixed(0) + " m" : "N/A"}<br>
-            Velocidade: ${velocity ? velocity.toFixed(1) + " m/s" : "N/A"}<br>
-            Direção: ${trueTrack ? trueTrack.toFixed(0) + "°" : "N/A"}<br>
-            Estado: ${onGround ? "No solo" : "Em voo"}
-          `;
-
-          const icone = criarIconeAviao();
-
-          if (marcadores[hex]) {
-            marcadores[hex].setLatLng([latitude, longitude]).setIcon(icone).setPopupContent(texto);
-            aplicarRotacao(marcadores[hex], trueTrack || 0);
-          } else {
-            const marcador = L.marker([latitude, longitude], { icon: icone }).addTo(mapa).bindPopup(texto);
-            marcadores[hex] = marcador;
-            aplicarRotacao(marcador, trueTrack || 0);
-          }
-        } catch (erro) {
-          console.error(`Erro ao buscar dados para ${hex}:`, erro);
-        }
-      }
-    }
-
-    atualizarLista();
-    buscarDados();
-    setInterval(buscarDados, 30000);
+    // Exemplo de atualização
+    atualizarAeronave('abc123', 38.72, -9.14, 135, 'Aeronave rumo sudeste');
   </script>
 </body>
 </html>
