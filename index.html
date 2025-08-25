@@ -2,77 +2,68 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Radar Aéreo</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map { height: 100vh; }
-    .popup-img { width: 200px; margin-top: 8px; }
-  </style>
+  <title>Radar Aéreo com HexCodes</title>
 </head>
 <body>
-  <div id="map"></div>
+  <h1>Voos ativos</h1>
+  <div id="output">A carregar...</div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([38.736946, -9.142685], 7); // Lisboa
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const API_KEY = "jtGYiWbmsmetTGHMKvf0B2axN5qlKV0A"; // ← substitui pela tua chave da AeroAPI
 
     async function carregarHexCodes() {
-      const resposta = await fetch('hexCodes.json');
+      const resposta = await fetch("hexCodes.json");
       const dados = await resposta.json();
       return dados.hexCodes.map(h => h.toUpperCase());
     }
 
-    async function buscarDadosCombinados(hex) {
-      try {
-        const [hexdbRes, adsbRes] = await Promise.all([
-          fetch(`https://hexdb.io/api/v1/aircraft/${hex}`).then(r => r.json()),
-          fetch(`https://api.adsbdb.com/v0/aircraft/${hex}`).then(r => r.json())
-        ]);
-
-        if (!adsbRes.lat || !adsbRes.lon) return null;
-
-        return {
-          hex,
-          lat: adsbRes.lat,
-          lon: adsbRes.lon,
-          altitude: adsbRes.altitude,
-          speed: adsbRes.speed,
-          track: adsbRes.track,
-          registration: hexdbRes.registration || 'N/A',
-          operator: hexdbRes.operator || 'Desconhecido',
-          type: hexdbRes.type || 'N/A',
-          image: hexdbRes.image || ''
-        };
-      } catch (erro) {
-        console.error(`Erro ao buscar dados para ${hex}:`, erro);
-        return null;
-      }
+    async function getRegistration(hex) {
+      const url = `https://api.adsbdb.com/v0/aircraft/${hex}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.registration || null;
     }
 
-    async function mostrarAvioesNoMapa() {
+    async function getFlightData(registration) {
+      const url = `https://aeroapi.flightaware.com/aeroapi/flights/${registration}`;
+      const res = await fetch(url, {
+        headers: { "x-apikey": API_KEY }
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.flights?.[0] || null;
+    }
+
+    async function mostrarVoos() {
+      const output = document.getElementById("output");
+      output.innerHTML = "";
+
       const hexCodes = await carregarHexCodes();
 
       for (const hex of hexCodes) {
-        const dados = await buscarDadosCombinados(hex);
-        if (!dados) continue;
+        const reg = await getRegistration(hex);
+        if (!reg) {
+          output.innerHTML += `<p>❌ HEX ${hex}: registration não encontrado.</p>`;
+          continue;
+        }
 
-        const popup = `
-          <strong>${dados.operator}</strong><br>
-          Tipo: ${dados.type}<br>
-          Registo: ${dados.registration}<br>
-          Altitude: ${dados.altitude} ft<br>
-          Velocidade: ${dados.speed} kt<br>
-          Direção: ${dados.track}°<br>
-          ${dados.image ? `<img src="${dados.image}" class="popup-img" />` : ''}
+        const flight = await getFlightData(reg);
+        if (!flight) {
+          output.innerHTML += `<p>⚠️ ${reg}: nenhum voo ativo encontrado.</p>`;
+          continue;
+        }
+
+        const pos = flight.last_position || {};
+        output.innerHTML += `
+          <p>✈️ ${flight.ident} (${reg})<br>
+          Origem: ${flight.origin?.code} → Destino: ${flight.destination?.code}<br>
+          Posição: ${pos.latitude}, ${pos.longitude} | Altitude: ${pos.altitude} ft</p>
         `;
-
-        const marcador = L.marker([dados.lat, dados.lon]).addTo(map);
-        marcador.bindPopup(popup);
       }
     }
 
-    mostrarAvioesNoMapa();
+    mostrarVoos();
   </script>
 </body>
 </html>
