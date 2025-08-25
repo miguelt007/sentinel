@@ -4,10 +4,23 @@
   <meta charset="UTF-8">
   <title>Voos Ativos com AeroAPI</title>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f9f9f9; }
-    h1 { color: #333; }
-    .voo { background: #fff; padding: 10px; margin-bottom: 10px; border-left: 5px solid #0078D7; }
-    .erro { border-left: 5px solid #D70000; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .voo {
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-left: 5px solid #0078D7;
+    }
+    .erro {
+      border-left: 5px solid #D70000;
+    }
   </style>
 </head>
 <body>
@@ -17,20 +30,10 @@
   <script>
     const API_KEY = "jtGYiWbmsmetTGHMKvf0B2axN5qlKV0A"; // ← substitui pela tua chave da AeroAPI
 
-    async function carregarHexCodes() {
+    async function carregarRegistos() {
       const resposta = await fetch("hexCodes.json");
       const dados = await resposta.json();
-      return dados.hexCodes.map(h => h.toUpperCase());
-    }
-
-    async function getRegistration(hex) {
-      try {
-        const res = await fetch(`https://hexdb.io/api/v1/aircraft/${hex}`);
-        const data = await res.json();
-        return data.registration || null;
-      } catch {
-        return null;
-      }
+      return dados.registrations.map(r => r.toUpperCase());
     }
 
     async function getFlightData(registration) {
@@ -49,21 +52,13 @@
       const container = document.getElementById("voos-ativos");
       container.innerHTML = "";
 
-      const hexCodes = await carregarHexCodes();
+      const registrations = await carregarRegistos();
 
-      for (const hex of hexCodes) {
-        const reg = await getRegistration(hex);
+      for (const reg of registrations) {
+        const voo = await getFlightData(reg);
         const div = document.createElement("div");
         div.classList.add("voo");
 
-        if (!reg) {
-          div.classList.add("erro");
-          div.textContent = `❌ HEX ${hex}: registration não encontrado.`;
-          container.appendChild(div);
-          continue;
-        }
-
-        const voo = await getFlightData(reg);
         if (!voo || !voo.last_position) {
           div.classList.add("erro");
           div.textContent = `⚠️ ${reg}: nenhum voo ativo encontrado.`;
