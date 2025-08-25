@@ -1,3 +1,7 @@
-{
-  "hexCodes": ["06a07f", "407c0a", "4cade5"]
-}
+// hexCodes.js
+export const hexCodes = [
+  "4CA64E",
+  "4CA64F",
+  "4CA650",
+  // ...
+];
