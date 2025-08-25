@@ -1,16 +1,14 @@
 export default async function handler(req, res) {
-  const hex = req.query.hex;
+  const { hex } = req.query;
 
+  // Verifica se o parâmetro 'hex' foi fornecido
   if (!hex) {
-    return res.status(400).json({ error: 'Hex code em falta' });
+    return res.status(400).json({ error: 'Parâmetro "hex" em falta' });
   }
 
+  // Usa variáveis de ambiente para proteger credenciais
   const user = process.env.OPENSKY_USER;
   const pass = process.env.OPENSKY_PASS;
-
-  if (!user || !pass) {
-    return res.status(500).json({ error: 'Credenciais não definidas no ambiente' });
-  }
 
   const auth = Buffer.from(`${user}:${pass}`).toString('base64');
   const url = `https://opensky-network.org/api/states/all?icao24=${hex}`;
@@ -22,14 +20,9 @@ export default async function handler(req, res) {
       }
     });
 
-    if (!resposta.ok) {
-      throw new Error(`Erro da API: ${resposta.status}`);
-    }
-
     const dados = await resposta.json();
     res.status(200).json(dados);
   } catch (erro) {
-    console.error('Erro na função /api/opensky:', erro);
     res.status(500).json({ error: 'Erro ao obter dados da OpenSky' });
   }
 }
