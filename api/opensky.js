@@ -10,11 +10,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Lê hexCodes.json
+    // Lê hexCodes.json da raiz do projeto
     const filePath = path.join(process.cwd(), "hexCodes.json");
-    const fileData = fs.readFileSync(filePath, "utf8");
-    const { hexCodes } = JSON.parse(fileData);
-    const hexSet = new Set(hexCodes.map(h => h.toUpperCase()));
+    const fileContent = fs.readFileSync(filePath, "utf8");
+    const { hexCodes } = JSON.parse(fileContent);
+    const hexSet = new Set(hexCodes.map(h => h.toLowerCase()));
 
     // Chamada à OpenSky
     const response = await fetch("https://opensky-network.org/api/states/all", {
@@ -24,10 +24,11 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    const filtered = data.states?.filter(state => hexSet.has(state[0]?.toUpperCase())) || [];
+    const filtered = data.states?.filter(state => hexSet.has(state[0]?.toLowerCase())) || [];
 
     res.status(200).json({ states: filtered });
   } catch (error) {
+    console.error("Erro no backend:", error);
     res.status(500).json({ error: "Erro ao obter ou filtrar dados da OpenSky." });
   }
 }
