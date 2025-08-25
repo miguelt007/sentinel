@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <title>Rastreador de Aeronaves</title>
+  <title>Rastreamento com AircraftScatter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
@@ -18,14 +18,14 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const mapa = L.map('mapa').setView([39.6760, -8.1498], 7); // Vila de Rei
+    const mapa = L.map('mapa').setView([39.6760, -8.1498], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
 
     const marcadores = {};
-    const RAPIDAPI_KEY = "dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678";
-    const RAPIDAPI_HOST = "adsbexchange-com1.p.rapidapi.com";
+    const RAPIDAPI_KEY = "dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678"; // ← substitui pela tua chave
+    const RAPIDAPI_HOST = "aircraftscatter.p.rapidapi.com";
 
     function criarIconeAviao() {
       const svgIcon = encodeURIComponent(`
@@ -60,8 +60,8 @@
       return dados.hexCodes.map(h => h.toUpperCase());
     }
 
-    async function buscarAvioes(hexCodes) {
-      const url = `https://${RAPIDAPI_HOST}/v2/lat/39.6760/lon/-8.1498/dist/100/`;
+    async function buscarPorHex(hex) {
+      const url = `https://${RAPIDAPI_HOST}/v1/hex/${hex}`;
       const opcoes = {
         method: 'GET',
         headers: {
@@ -73,28 +73,27 @@
       try {
         const resposta = await fetch(url, opcoes);
         const dados = await resposta.json();
-        const todosAvioes = dados.ac || [];
-        return todosAvioes.filter(aviao => hexCodes.includes(aviao.hex.toUpperCase()));
+        return dados;
       } catch (erro) {
-        console.error("Erro ao buscar dados da API:", erro);
-        return [];
+        console.error(`Erro ao buscar ${hex}:`, erro);
+        return null;
       }
     }
 
     async function atualizarMapa() {
       const hexCodes = await carregarHexCodes();
-      const avioes = await buscarAvioes(hexCodes);
 
-      for (const aviao of avioes) {
-        const { hex, lat, lon, flight, alt_baro, gs, track } = aviao;
-        if (!lat || !lon || !hex) continue;
+      for (const hex of hexCodes) {
+        const aviao = await buscarPorHex(hex);
+        if (!aviao || !aviao.lat || !aviao.lon) continue;
 
+        const { lat, lon, alt_baro, gs, track, flight } = aviao;
         const texto = `
           <strong>${flight || "Sem callsign"}</strong><br>
           Hex: ${hex}<br>
-          Altitude: ${alt_baro ? alt_baro + " ft" : "N/A"}<br>
-          Velocidade: ${gs ? gs + " kt" : "N/A"}<br>
-          Direção: ${track ? track + "°" : "N/A"}
+          Altitude: ${alt_baro || "N/A"} ft<br>
+          Velocidade: ${gs || "N/A"} kt<br>
+          Direção: ${track || "N/A"}°
         `;
 
         const icone = criarIconeAviao();
