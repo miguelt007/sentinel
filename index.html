@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -18,11 +19,12 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const mapa = L.map('mapa').setView([39.5, -8.0], 7);
+    const mapa = L.map('mapa').setView([39.6760, -8.1498], 7); // Vila de Rei
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
 
+    const API_KEY = "your-uuid"; // ← substitui pela tua chave da ADS-B Exchange
     const marcadores = {};
 
     function criarIconeAviao() {
@@ -52,43 +54,38 @@
       aplicar();
     }
 
-    async function buscarDados(hexCodes) {
-      for (const hex of hexCodes) {
-        try {
-          const resposta = await fetch(`/api/opensky?hex=${hex}`);
-          const dados = await resposta.json();
-          const estado = dados.states && dados.states[0];
-          if (!estado) continue;
+    async function buscarDadosPorHex(hex) {
+      try {
+        const resposta = await fetch(`https://adsbexchange.com/api/aircraft/hex/${hex}`, {
+          headers: { "api-auth": API_KEY }
+        });
+        const dados = await resposta.json();
+        const aviao = dados.ac;
 
-          const [
-            , callsign, originCountry, , ,
-            longitude, latitude, baroAltitude, onGround, velocity, trueTrack
-          ] = estado;
+        if (!aviao || !aviao.lat || !aviao.lon) return;
 
-          if (!latitude || !longitude) continue;
+        const { flight, lat, lon, alt_baro, gs, track, r } = aviao;
 
-          const texto = `
-            <strong>${callsign || "Sem callsign"}</strong><br>
-            País: ${originCountry}<br>
-            Altitude: ${baroAltitude ? baroAltitude.toFixed(0) + " m" : "N/A"}<br>
-            Velocidade: ${velocity ? velocity.toFixed(1) + " m/s" : "N/A"}<br>
-            Direção: ${trueTrack ? trueTrack.toFixed(0) + "°" : "N/A"}<br>
-            Estado: ${onGround ? "No solo" : "Em voo"}
-          `;
+        const texto = `
+          <strong>${flight || "Sem callsign"}</strong><br>
+          Altitude: ${alt_baro ? alt_baro + " ft" : "N/A"}<br>
+          Velocidade: ${gs ? gs + " kt" : "N/A"}<br>
+          Direção: ${track ? track + "°" : "N/A"}<br>
+          Receptor: ${r || "N/A"}
+        `;
 
-          const icone = criarIconeAviao();
+        const icone = criarIconeAviao();
 
-          if (marcadores[hex]) {
-            marcadores[hex].setLatLng([latitude, longitude]).setIcon(icone).setPopupContent(texto);
-            aplicarRotacao(marcadores[hex], trueTrack || 0);
-          } else {
-            const marcador = L.marker([latitude, longitude], { icon: icone }).addTo(mapa).bindPopup(texto);
-            marcadores[hex] = marcador;
-            aplicarRotacao(marcador, trueTrack || 0);
-          }
-        } catch (erro) {
-          console.error(`Erro ao buscar dados para ${hex}:`, erro);
+        if (marcadores[hex]) {
+          marcadores[hex].setLatLng([lat, lon]).setIcon(icone).setPopupContent(texto);
+          aplicarRotacao(marcadores[hex], track || 0);
+        } else {
+          const marcador = L.marker([lat, lon], { icon: icone }).addTo(mapa).bindPopup(texto);
+          marcadores[hex] = marcador;
+          aplicarRotacao(marcador, track || 0);
         }
+      } catch (erro) {
+        console.error(`Erro ao buscar dados para ${hex}:`, erro);
       }
     }
 
@@ -97,8 +94,15 @@
         const resposta = await fetch('hexCodes.json');
         const dados = await resposta.json();
         const hexCodes = dados.hexCodes;
-        buscarDados(hexCodes);
-        setInterval(() => buscarDados(hexCodes), 60000); // Atualiza a cada 60 segundos
+
+        const atualizar = () => {
+          for (const hex of hexCodes) {
+            buscarDadosPorHex(hex);
+          }
+        };
+
+        atualizar();
+        setInterval(atualizar, 60000); // Atualiza a cada 60 segundos
       } catch (erro) {
         console.error("Erro ao carregar hexCodes.json:", erro);
       }
