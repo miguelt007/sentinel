@@ -14,7 +14,11 @@ export default async function handler(req, res) {
     const filePath = path.join(process.cwd(), "hexCodes.json");
     const fileContent = fs.readFileSync(filePath, "utf8");
     const { hexCodes } = JSON.parse(fileContent);
-    const hexSet = new Set(hexCodes.map(h => h.toLowerCase()));
+
+    // Validação dos hex codes (apenas 6 caracteres hexadecimais)
+    const isValidHex = h => /^[0-9a-fA-F]{6}$/.test(h);
+    const validHexCodes = hexCodes.filter(isValidHex).map(h => h.toLowerCase());
+    const hexSet = new Set(validHexCodes);
 
     // Chamada à OpenSky
     const response = await fetch("https://opensky-network.org/api/states/all", {
