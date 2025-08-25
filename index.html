@@ -2,79 +2,76 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
+  <title>Rumo da Aeronave</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mapa com Avião Rotativo</title>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-sA+e2tGzG3zU7zWv+gU5Zk+U6QZQ0VwzT+U2Q6ZzjW3w="
-    crossorigin=""
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #map {
-      height: 100vh;
-    }
+    body { margin: 0; }
+    #mapa { height: 100vh; width: 100vw; }
     .icone-aviao {
-      transition: transform 0.2s ease;
+      transition: transform 0.3s ease;
     }
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <div id="mapa"></div>
 
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-o9N1jRVvZ1zU7zWv+gU5Zk+U6QZQ0VwzT+U2Q6ZzjW3w="
-    crossorigin=""
-  ></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // Inicializar mapa
-    const map = L.map('map').setView([38.7, -9.3], 10); // Lisboa
-
-    // Adicionar camada base
+    // Inicializar o mapa
+    const mapa = L.map('mapa').setView([38.736946, -9.142685], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    }).addTo(mapa);
 
-    // Criar ícone SVG de avião
-    function criarIconeAviao() {
-      const svgIcon = encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
-          <path d="M2 16l10-4V3.5a1.5 1.5 0 0 1 3 0V12l10 4v2l-10-2v4l3 2v1l-4-1-4 1v-1l3-2v-4l-10 2v-2z"/>
-        </svg>
-      `);
-      return L.icon({
-        iconUrl: `data:image/svg+xml;charset=UTF-8,${svgIcon}`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-        className: 'icone-aviao'
-      });
+    // Ícone SVG do avião
+    const svgIcon = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
+        <path d="M2 16l10-4V3.5a1.5 1.5 0 0 1 3 0V12l10 4v2l-10-2v4l3 2v1l-4-1-4 1v-1l3-2v-4l-10 2v-2z"/>
+      </svg>
+    `);
+
+    const iconeAviao = L.icon({
+      iconUrl: `data:image/svg+xml;charset=UTF-8,${svgIcon}`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      className: 'icone-aviao'
+    });
+
+    // Criar marcador inicial
+    const marcador = L.marker([38.736946, -9.142685], { icon: iconeAviao }).addTo(mapa);
+
+    // Função para atualizar posição e rumo
+    function atualizarAeronave(dados) {
+      const estado = dados.states[0];
+      const latitude = estado[6];
+      const longitude = estado[5];
+      const rumo = estado[10]; // true_track
+
+      marcador.setLatLng([latitude, longitude]);
+
+      const el = marcador.getElement();
+      if (el) {
+        el.style.transform = `rotate(${rumo}deg)`;
+      }
     }
 
-    // Aplicar rotação ao ícone
-    function aplicarRotacao(marcador, angulo) {
-      const aplicar = () => {
-        const el = marcador.getElement();
-        if (el) {
-          el.style.transform = `rotate(${angulo}deg)`;
-        } else {
-          setTimeout(aplicar, 100);
-        }
-      };
-      aplicar();
+    // Buscar dados da aeronave
+    const icao24 = '4ca77c'; // Exemplo: Ryanair
+    function atualizarDados() {
+      fetch(`https://opensky-network.org/api/states/all?icao24=${icao24}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.states && data.states.length > 0) {
+            atualizarAeronave(data);
+          }
+        })
+        .catch(err => console.error('Erro ao buscar dados:', err));
     }
 
-    // Criar marcador de avião
-    const marcadorAviao = L.marker([38.7, -9.3], {
-      icon: criarIconeAviao()
-    }).addTo(map);
-
-    // Simular atualização de rumo
-    let angulo = 0;
-    setInterval(() => {
-      angulo = (angulo + 10) % 360;
-      aplicarRotacao(marcadorAviao, angulo);
-    }, 1000);
+    // Atualizar a cada 10 segundos
+    atualizarDados();
+    setInterval(atualizarDados, 10000);
   </script>
 </body>
 </html>
