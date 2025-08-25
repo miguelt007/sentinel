@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -24,8 +23,9 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
 
-    const API_KEY = "XmO_VgBYq27m"; // ← substitui pela tua chave da ADS-B Exchange
     const marcadores = {};
+    const RAPIDAPI_KEY = "TUA_CHAVE_RAPIDAPI_AQUI"; // ← substitui pela tua chave
+    const RAPIDAPI_HOST = "adsbexchange-com1.p.rapidapi.com";
 
     function criarIconeAviao() {
       const svgIcon = encodeURIComponent(`
@@ -56,22 +56,25 @@
 
     async function buscarDadosPorHex(hex) {
       try {
-        const resposta = await fetch(`https://adsbexchange.com/api/aircraft/hex/${hex}`, {
-          headers: { "api-auth": API_KEY }
+        const resposta = await fetch(`https://${RAPIDAPI_HOST}/v2/hex/${hex}`, {
+          method: 'GET',
+          headers: {
+            'X-RapidAPI-Key': RAPIDAPI_KEY,
+            'X-RapidAPI-Host': RAPIDAPI_HOST
+          }
         });
         const dados = await resposta.json();
-        const aviao = dados.ac;
+        const aviao = dados;
 
         if (!aviao || !aviao.lat || !aviao.lon) return;
 
-        const { flight, lat, lon, alt_baro, gs, track, r } = aviao;
+        const { flight, lat, lon, alt_baro, gs, track } = aviao;
 
         const texto = `
           <strong>${flight || "Sem callsign"}</strong><br>
           Altitude: ${alt_baro ? alt_baro + " ft" : "N/A"}<br>
           Velocidade: ${gs ? gs + " kt" : "N/A"}<br>
-          Direção: ${track ? track + "°" : "N/A"}<br>
-          Receptor: ${r || "N/A"}
+          Direção: ${track ? track + "°" : "N/A"}
         `;
 
         const icone = criarIconeAviao();
