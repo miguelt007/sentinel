@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Rastreador de Aeronave</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    #dados {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 500px;
+    }
+    .erro {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>✈️ Rastreador de Aeronave</h1>
+  <p>A acompanhar aeronave com hex code: <strong>4ca77c</strong></p>
+  <div id="dados">A carregar dados...</div>
+
+  <script>
+    async function buscarDados() {
+      const hexCode = "4ca77c"; // Substitui pelo hex code da aeronave que queres seguir
+      const url = `https://opensky-network.org/api/states/all?icao24=${hexCode}`;
+
+      try {
+        const resposta = await fetch(url);
+        if (!resposta.ok) throw new Error("Falha ao obter dados da API");
+
+        const dados = await resposta.json();
+        const estado = dados.states && dados.states[0];
+
+        if (!estado) {
+          document.getElementById("dados").innerHTML = "<p class='erro'>Nenhum dado encontrado para esta aeronave.</p>";
+          return;
+        }
+
+        const [
+          icao24, callsign, originCountry, timePosition, lastContact,
+          longitude, latitude, baroAltitude, onGround, velocity
+        ] = estado;
+
+        const hora = new Date(lastContact * 1000).toLocaleTimeString();
+
+        document.getElementById("dados").innerHTML = `
+          <p><strong>Callsign:</strong> ${callsign || "N/A"}</p>
+          <p><strong>País de origem:</strong> ${originCountry}</p>
+          <p><strong>Latitude:</strong> ${latitude?.toFixed(5) || "N/A"}</p>
+          <p><strong>Longitude:</strong> ${longitude?.toFixed(5) || "N/A"}</p>
+          <p><strong>Altitude:</strong> ${baroAltitude ? baroAltitude.toFixed(0) + " m" : "N/A"}</p>
+          <p><strong>Velocidade:</strong> ${velocity ? velocity.toFixed(1) + " m/s" : "N/A"}</p>
+          <p><strong>Estado:</strong> ${onGround ? "No solo" : "Em voo"}</p>
+          <p><strong>Último contacto:</strong> ${hora}</p>
+        `;
+      } catch (erro) {
+        document.getElementById("dados").innerHTML = `<p class='erro'>Erro ao buscar dados: ${erro.message}</p>`;
+        console.error(erro);
+      }
+    }
+
+    buscarDados();
+    setInterval(buscarDados, 30000); // Atualiza a cada 30 segundos
+  </script>
+</body>
+</html>
