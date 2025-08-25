@@ -2,31 +2,25 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <title>Mapa com Ícone Rotativo</title>
+  <title>Rastreador de Aeronaves</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #mapa {
-      height: 100vh;
-      width: 100%;
-    }
+    body { margin: 0; font-family: Arial, sans-serif; }
+    #mapa { height: 100vh; width: 100vw; }
     .icone-aviao {
-      transition: transform 0.2s ease;
+      transition: transform 0.3s ease;
     }
   </style>
 </head>
 <body>
   <div id="mapa"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const mapa = L.map('mapa').setView([38.7, -9.3], 10);
-
+    const mapa = L.map('mapa').setView([39.5, -8.0], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
+      attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
 
     const marcadores = {};
@@ -58,20 +52,60 @@
       aplicar();
     }
 
-    function atualizarAeronave(hex, latitude, longitude, trueTrack, texto) {
-      const icone = criarIconeAviao();
-      if (marcadores[hex]) {
-        marcadores[hex].setLatLng([latitude, longitude]).setIcon(icone).setPopupContent(texto);
-        aplicarRotacao(marcadores[hex], trueTrack || 0);
-      } else {
-        const marcador = L.marker([latitude, longitude], { icon: icone }).addTo(mapa).bindPopup(texto);
-        marcadores[hex] = marcador;
-        aplicarRotacao(marcador, trueTrack || 0);
+    async function buscarDados(hexCodes) {
+      for (const hex of hexCodes) {
+        try {
+          const url = `https://opensky-network.org/api/states/all?icao24=${hex}`;
+          const resposta = await fetch(url);
+          const dados = await resposta.json();
+          const estado = dados.states && dados.states[0];
+          if (!estado) continue;
+
+          const [
+            , callsign, originCountry, , ,
+            longitude, latitude, baroAltitude, onGround, velocity, trueTrack
+          ] = estado;
+
+          if (!latitude || !longitude) continue;
+
+          const texto = `
+            <strong>${callsign || "Sem callsign"}</strong><br>
+            País: ${originCountry}<br>
+            Altitude: ${baroAltitude ? baroAltitude.toFixed(0) + " m" : "N/A"}<br>
+            Velocidade: ${velocity ? velocity.toFixed(1) + " m/s" : "N/A"}<br>
+            Direção: ${trueTrack ? trueTrack.toFixed(0) + "°" : "N/A"}<br>
+            Estado: ${onGround ? "No solo" : "Em voo"}
+          `;
+
+          const icone = criarIconeAviao();
+
+          if (marcadores[hex]) {
+            marcadores[hex].setLatLng([latitude, longitude]).setIcon(icone).setPopupContent(texto);
+            aplicarRotacao(marcadores[hex], trueTrack || 0);
+          } else {
+            const marcador = L.marker([latitude, longitude], { icon: icone }).addTo(mapa).bindPopup(texto);
+            marcadores[hex] = marcador;
+            aplicarRotacao(marcador, trueTrack || 0);
+          }
+        } catch (erro) {
+          console.error(`Erro ao buscar dados para ${hex}:`, erro);
+        }
       }
     }
 
-    // Exemplo de atualização
-    atualizarAeronave('abc123', 38.72, -9.14, 135, 'Aeronave rumo sudeste');
+    async function carregarHexCodes() {
+      try {
+        const resposta = await fetch('hexCodes.json');
+        const dados = await resposta.json();
+        const hexCodes = dados.hexCodes;
+        buscarDados(hexCodes);
+        setInterval(() => buscarDados(hexCodes), 30000);
+      } catch (erro) {
+        console.error("Erro ao carregar hexCodes.json:", erro);
+      }
+    }
+
+    carregarHexCodes();
   </script>
 </body>
 </html>
