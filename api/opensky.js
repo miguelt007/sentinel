@@ -13,11 +13,14 @@ async function obterToken() {
       client_id: process.env.OPENSKY_CLIENT_ID,
       client_secret: process.env.OPENSKY_CLIENT_SECRET
     }),
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      timeout: 20000 // 20 segundos para obter o token
+    }
   );
 
   tokenCache = response.data.access_token;
-  tokenExpiry = Date.now() + 29 * 60 * 1000; // 29 minutos
+  tokenExpiry = Date.now() + 29 * 60 * 1000; // 29 minutos de validade
   return tokenCache;
 }
 
@@ -27,10 +30,13 @@ export default async function handler(req, res) {
 
   try {
     const token = await obterToken();
-    const resposta = await axios.get(`https://opensky-network.org/api/states/all?icao24=${hex}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: 20000
-    });
+    const resposta = await axios.get(
+      `https://opensky-network.org/api/states/all?icao24=${hex}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 20000 // 20 segundos para chamada à API
+      }
+    );
 
     res.status(200).json(resposta.data);
   } catch (erro) {
