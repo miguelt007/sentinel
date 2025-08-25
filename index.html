@@ -1,117 +1,58 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <title>Rastreador de Aeronaves</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    body { margin: 0; font-family: Arial, sans-serif; }
-    #mapa { height: 100vh; width: 100vw; }
-    .icone-aviao {
-      transition: transform 0.3s ease;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Rastreamento de Hex Codes</title>
 </head>
 <body>
-  <div id="mapa"></div>
+  <h1>Aviões rastreados</h1>
+  <ul id="listaAvioes"></ul>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    const mapa = L.map('mapa').setView([39.6760, -8.1498], 7); // Vila de Rei
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(mapa);
+    async function carregarHexCodes() {
+      const resposta = await fetch('hexCodes.json');
+      const dados = await resposta.json();
+      return dados.hexCodes;
+    }
 
-    const marcadores = {};
-    const RAPIDAPI_KEY = "TUA_CHAVE_RAPIDAPI_AQUI"; // ← substitui pela tua chave
-    const RAPIDAPI_HOST = "adsbexchange-com1.p.rapidapi.com";
+    async function buscarAvioes(hexCodes) {
+      const url = 'https://adsbexchange-com1.p.rapidapi.com/v2/lat/39.6760/lon/-8.1498/dist/100/';
+      const opcoes = {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': 'dbcf86698cmshd04b1b46934dd15p11474ejsn267bbdb81678',
+          'X-RapidAPI-Host': 'adsbexchange-com1.p.rapidapi.com'
+        }
+      };
 
-    function criarIconeAviao() {
-      const svgIcon = encodeURIComponent(`
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
-          <path d="M2 16l10-4V3.5a1.5 1.5 0 0 1 3 0V12l10 4v2l-10-2v4l3 2v1l-4-1-4 1v-1l3-2v-4l-10 2v-2z"/>
-        </svg>
-      `);
-      return L.icon({
-        iconUrl: `data:image/svg+xml;charset=UTF-8,${svgIcon}`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-        className: 'icone-aviao'
+      const resposta = await fetch(url, opcoes);
+      const dados = await resposta.json();
+      const todosAvioes = dados.ac || [];
+
+      // Filtrar pelos hex codes
+      return todosAvioes.filter(aviao => hexCodes.includes(aviao.hex.toUpperCase()));
+    }
+
+    async function mostrarAvioes() {
+      const hexCodes = await carregarHexCodes();
+      const avioesFiltrados = await buscarAvioes(hexCodes);
+
+      const lista = document.getElementById('listaAvioes');
+      lista.innerHTML = '';
+
+      if (avioesFiltrados.length === 0) {
+        lista.innerHTML = '<li>Nenhum avião rastreado encontrado na área.</li>';
+        return;
+      }
+
+      avioesFiltrados.forEach(aviao => {
+        const item = document.createElement('li');
+        item.textContent = `Hex: ${aviao.hex} | ICAO: ${aviao.icao || 'N/A'} | Altitude: ${aviao.alt_baro || 'N/A'} ft`;
+        lista.appendChild(item);
       });
     }
 
-    function aplicarRotacao(marcador, angulo) {
-      const aplicar = () => {
-        const el = marcador.getElement();
-        if (el) {
-          el.style.transform = `rotate(${angulo}deg)`;
-          el.style.transformOrigin = 'center center';
-        } else {
-          setTimeout(aplicar, 100);
-        }
-      };
-      aplicar();
-    }
-
-    async function buscarDadosPorHex(hex) {
-      try {
-        const resposta = await fetch(`https://${RAPIDAPI_HOST}/v2/hex/${hex}`, {
-          method: 'GET',
-          headers: {
-            'X-RapidAPI-Key': RAPIDAPI_KEY,
-            'X-RapidAPI-Host': RAPIDAPI_HOST
-          }
-        });
-        const dados = await resposta.json();
-        const aviao = dados;
-
-        if (!aviao || !aviao.lat || !aviao.lon) return;
-
-        const { flight, lat, lon, alt_baro, gs, track } = aviao;
-
-        const texto = `
-          <strong>${flight || "Sem callsign"}</strong><br>
-          Altitude: ${alt_baro ? alt_baro + " ft" : "N/A"}<br>
-          Velocidade: ${gs ? gs + " kt" : "N/A"}<br>
-          Direção: ${track ? track + "°" : "N/A"}
-        `;
-
-        const icone = criarIconeAviao();
-
-        if (marcadores[hex]) {
-          marcadores[hex].setLatLng([lat, lon]).setIcon(icone).setPopupContent(texto);
-          aplicarRotacao(marcadores[hex], track || 0);
-        } else {
-          const marcador = L.marker([lat, lon], { icon: icone }).addTo(mapa).bindPopup(texto);
-          marcadores[hex] = marcador;
-          aplicarRotacao(marcador, track || 0);
-        }
-      } catch (erro) {
-        console.error(`Erro ao buscar dados para ${hex}:`, erro);
-      }
-    }
-
-    async function carregarHexCodes() {
-      try {
-        const resposta = await fetch('hexCodes.json');
-        const dados = await resposta.json();
-        const hexCodes = dados.hexCodes;
-
-        const atualizar = () => {
-          for (const hex of hexCodes) {
-            buscarDadosPorHex(hex);
-          }
-        };
-
-        atualizar();
-        setInterval(atualizar, 60000); // Atualiza a cada 60 segundos
-      } catch (erro) {
-        console.error("Erro ao carregar hexCodes.json:", erro);
-      }
-    }
-
-    carregarHexCodes();
+    mostrarAvioes();
   </script>
 </body>
 </html>
