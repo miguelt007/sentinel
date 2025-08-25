@@ -1,81 +1,64 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <title>Mapa de Aeronaves</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <meta charset="UTF-8" />
+  <title>Mapa de Aviões em Tempo Real</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <style>
     body { margin: 0; font-family: Arial, sans-serif; }
-    #map { height: 100vh; }
-    #painel {
-      position: absolute;
-      top: 10px; left: 10px;
-      background: white; padding: 10px;
-      border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      z-index: 1000;
+    #mapa { height: 100vh; width: 100%; }
+    .icone-aviao {
+      transition: transform 0.3s ease;
     }
-    input, button { margin-top: 5px; width: 100%; }
   </style>
 </head>
 <body>
-  <div id="painel">
-    <h3>✈️ Hex Codes</h3>
-    <input type="text" id="novoHex" placeholder="Ex: 4ca77c" />
-    <button onclick="adicionarHex()">Adicionar</button>
-    <ul id="listaHex"></ul>
-  </div>
-  <div id="map"></div>
+  <div id="mapa"></div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const mapa = L.map('map').setView([39.5, -8.0], 6); // Centro de Portugal
+    const mapa = L.map('mapa').setView([38.736946, -9.142685], 6); // Lisboa
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
+      attribution: '© OpenStreetMap',
     }).addTo(mapa);
 
-    let hexCodes = ['4ca77c']; // Lista inicial
-    let marcadores = {};
+    const hexCodes = ['4ca77c', '3c4b26']; // Adiciona aqui os hex codes que queres seguir
+    const marcadores = {};
 
-    function adicionarHex() {
-      const hex = document.getElementById("novoHex").value.trim().toLowerCase();
-      if (hex && !hexCodes.includes(hex)) {
-        hexCodes.push(hex);
-        atualizarLista();
-        buscarDados();
-      }
-      document.getElementById("novoHex").value = "";
-    }
-
-    function removerHex(hex) {
-      hexCodes = hexCodes.filter(h => h !== hex);
-      atualizarLista();
-      if (marcadores[hex]) {
-        mapa.removeLayer(marcadores[hex]);
-        delete marcadores[hex];
-      }
-    }
-
-    function atualizarLista() {
-      const ul = document.getElementById("listaHex");
-      ul.innerHTML = "";
-      hexCodes.forEach(hex => {
-        const li = document.createElement("li");
-        li.innerHTML = `${hex} <button onclick="removerHex('${hex}')">Remover</button>`;
-        ul.appendChild(li);
+    function criarIconeAviao(angulo) {
+      return L.icon({
+        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Airplane_silhouette.png/32px-Airplane_silhouette.png',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        className: 'icone-aviao',
       });
+    }
+
+    function aplicarRotacao(marcador, angulo) {
+      const el = marcador.getElement();
+      if (el) {
+        el.style.transform = `rotate(${angulo}deg)`;
+      }
     }
 
     async function buscarDados() {
       for (const hex of hexCodes) {
         try {
           const url = `https://opensky-network.org/api/states/all?icao24=${hex}`;
-          const res = await fetch(url);
-          const dados = await res.json();
+          const resposta = await fetch(url);
+          const dados = await resposta.json();
           const estado = dados.states && dados.states[0];
           if (!estado) continue;
 
-          const [icao24, callsign, originCountry, timePosition, lastContact,
-                 longitude, latitude, baroAltitude, onGround, velocity] = estado;
+          const [
+            icao24, callsign, originCountry, timePosition, lastContact,
+            longitude, latitude, baroAltitude, onGround, velocity, trueTrack
+          ] = estado;
 
           if (!latitude || !longitude) continue;
 
@@ -84,14 +67,19 @@
             País: ${originCountry}<br>
             Altitude: ${baroAltitude ? baroAltitude.toFixed(0) + " m" : "N/A"}<br>
             Velocidade: ${velocity ? velocity.toFixed(1) + " m/s" : "N/A"}<br>
+            Direção: ${trueTrack ? trueTrack.toFixed(0) + "°" : "N/A"}<br>
             Estado: ${onGround ? "No solo" : "Em voo"}
           `;
 
+          const icone = criarIconeAviao(trueTrack || 0);
+
           if (marcadores[hex]) {
-            marcadores[hex].setLatLng([latitude, longitude]).setPopupContent(texto);
+            marcadores[hex].setLatLng([latitude, longitude]).setIcon(icone).setPopupContent(texto);
+            aplicarRotacao(marcadores[hex], trueTrack || 0);
           } else {
-            const marcador = L.marker([latitude, longitude]).addTo(mapa).bindPopup(texto);
+            const marcador = L.marker([latitude, longitude], { icon: icone }).addTo(mapa).bindPopup(texto);
             marcadores[hex] = marcador;
+            aplicarRotacao(marcador, trueTrack || 0);
           }
         } catch (erro) {
           console.error(`Erro ao buscar dados para ${hex}:`, erro);
@@ -99,7 +87,6 @@
       }
     }
 
-    atualizarLista();
     buscarDados();
     setInterval(buscarDados, 30000); // Atualiza a cada 30 segundos
   </script>
