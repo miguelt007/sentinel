@@ -2,64 +2,69 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Radar Aéreo com HexCodes</title>
+  <title>Voos Ativos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .voo {
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-left: 5px solid #0078D7;
+    }
+    .erro {
+      border-left: 5px solid #D70000;
+    }
+  </style>
 </head>
 <body>
-  <h1>Voos ativos</h1>
-  <div id="output">A carregar...</div>
+  <h1>✈️ Voos Ativos</h1>
+  <div id="voos-ativos"></div>
 
   <script>
-    const API_KEY = "jtGYiWbmsmetTGHMKvf0B2axN5qlKV0A"; // ← substitui pela tua chave da AeroAPI
-
     async function carregarHexCodes() {
-      const resposta = await fetch("hexCodes.json");
-      const dados = await resposta.json();
-      return dados.hexCodes.map(h => h.toUpperCase());
+      const response = await fetch('hexCodes.json');
+      return await response.json();
     }
 
     async function getRegistration(hex) {
-      const url = `https://api.adsbdb.com/v0/aircraft/${hex}`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.registration || null;
-    }
+      try {
+        const response = await fetch(`https://hexdb.io/api/v1/aircraft/${hex}`);
+        const data = await response.json();
 
-    async function getFlightData(registration) {
-      const url = `https://aeroapi.flightaware.com/aeroapi/flights/${registration}`;
-      const res = await fetch(url, {
-        headers: { "x-apikey": API_KEY }
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.flights?.[0] || null;
+        if (data && data.registration) {
+          return { hex, registration: data.registration };
+        } else {
+          return { hex, error: true };
+        }
+      } catch (error) {
+        return { hex, error: true };
+      }
     }
 
     async function mostrarVoos() {
-      const output = document.getElementById("output");
-      output.innerHTML = "";
-
+      const container = document.getElementById("voos-ativos");
       const hexCodes = await carregarHexCodes();
 
       for (const hex of hexCodes) {
-        const reg = await getRegistration(hex);
-        if (!reg) {
-          output.innerHTML += `<p>❌ HEX ${hex}: registration não encontrado.</p>`;
-          continue;
+        const resultado = await getRegistration(hex);
+        const div = document.createElement("div");
+        div.classList.add("voo");
+
+        if (resultado.error) {
+          div.classList.add("erro");
+          div.textContent = `❌ HEX ${resultado.hex}: registration não encontrado.`;
+        } else {
+          div.textContent = `✅ HEX ${resultado.hex}: ${resultado.registration}`;
         }
 
-        const flight = await getFlightData(reg);
-        if (!flight) {
-          output.innerHTML += `<p>⚠️ ${reg}: nenhum voo ativo encontrado.</p>`;
-          continue;
-        }
-
-        const pos = flight.last_position || {};
-        output.innerHTML += `
-          <p>✈️ ${flight.ident} (${reg})<br>
-          Origem: ${flight.origin?.code} → Destino: ${flight.destination?.code}<br>
-          Posição: ${pos.latitude}, ${pos.longitude} | Altitude: ${pos.altitude} ft</p>
-        `;
+        container.appendChild(div);
       }
     }
 
