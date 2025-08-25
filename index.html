@@ -55,7 +55,7 @@
     async function buscarDados(hexCodes) {
       for (const hex of hexCodes) {
         try {
-          const resposta = await fetch(`/API/opensky?hex=${hex}`);
+          const resposta = await fetch(`/api/opensky?hex=${hex}`);
           const dados = await resposta.json();
           const estado = dados.states && dados.states[0];
           if (!estado) continue;
