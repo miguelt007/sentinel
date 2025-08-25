@@ -1,3 +1,6 @@
+import fs from "fs";
+import path from "path";
+
 export default async function handler(req, res) {
   const username = process.env.OPENSKY_USERNAME;
   const password = process.env.OPENSKY_PASSWORD;
@@ -7,6 +10,13 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Lê hexCodes.json
+    const filePath = path.join(process.cwd(), "hexCodes.json");
+    const fileData = fs.readFileSync(filePath, "utf8");
+    const { hexCodes } = JSON.parse(fileData);
+    const hexSet = new Set(hexCodes.map(h => h.toUpperCase()));
+
+    // Chamada à OpenSky
     const response = await fetch("https://opensky-network.org/api/states/all", {
       headers: {
         Authorization: "Basic " + Buffer.from(`${username}:${password}`).toString("base64"),
@@ -14,13 +24,10 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-
-    // Opcional: filtrar apenas os hex codes definidos
-    const hexCodes = ["407CAF", "4952CD", "4CA77F"];
-    const filtered = data.states.filter(state => hexCodes.includes(state[0]?.toUpperCase()));
+    const filtered = data.states?.filter(state => hexSet.has(state[0]?.toUpperCase())) || [];
 
     res.status(200).json({ states: filtered });
   } catch (error) {
-    res.status(500).json({ error: "Erro ao obter dados da OpenSky." });
+    res.status(500).json({ error: "Erro ao obter ou filtrar dados da OpenSky." });
   }
 }
