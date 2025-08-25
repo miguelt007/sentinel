@@ -1,40 +1,40 @@
-import axios from 'axios';
+// opensky.js
 
-let tokenCache = null;
-let tokenExpiry = 0;
+const axios = require('axios');
 
-async function obterToken() {
-  if (tokenCache && Date.now() < tokenExpiry) return tokenCache;
+const OPENKY_BASE_URL = 'https://api.openky.io/v1';
 
-  const response = await axios.post(
-    'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token',
-    new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: process.env.OPENSKY_CLIENT_ID,
-      client_secret: process.env.OPENSKY_CLIENT_SECRET
-    }),
-    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-  );
-
-  tokenCache = response.data.access_token;
-  tokenExpiry = Date.now() + 29 * 60 * 1000; // 29 minutos
-  return tokenCache;
-}
-
-export default async function handler(req, res) {
-  const { hex } = req.query;
-  if (!hex) return res.status(400).json({ error: 'Hex code em falta' });
-
+const getAccessToken = async () => {
   try {
-    const token = await obterToken();
-    const resposta = await axios.get(`https://opensky-network.org/api/states/all?icao24=${hex}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: 10000
+    const response = await axios.post(`${OPENKY_BASE_URL}/auth/token`, {
+      client_id: process.env.OPENSKY_CLIENT_ID,
+      client_secret: process.env.OPENSKY_CLIENT_SECRET,
     });
 
-    res.status(200).json(resposta.data);
-  } catch (erro) {
-    console.error("Erro na chamada à OpenSky:", erro.message);
-    res.status(500).json({ error: "Falha na ligação à OpenSky" });
+    return response.data.access_token;
+  } catch (error) {
+    console.error('Erro ao obter token de acesso:', error.response?.data || error.message);
+    throw new Error('Falha na autenticação com a OpenSky API');
   }
-}
+};
+
+const fetchFlightData = async (icao24) => {
+  const token = await getAccessToken();
+
+  try {
+    const response = await axios.get(`${OPENKY_BASE_URL}/flights/${icao24}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Erro ao buscar dados de voo:', error.response?.data || error.message);
+    throw new Error('Falha ao obter dados de voo da OpenSky');
+  }
+};
+
+module.exports = {
+  fetchFlightData,
+};
