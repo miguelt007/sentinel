@@ -49,17 +49,22 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const mapa = L.map('mapa').setView([39.5, -8.0], 7); // Centro de Portugal
+    const mapa = L.map('mapa').setView([39.5, -8.0], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
 
-    let hexCodes = ['4ca77c']; // Hex codes iniciais
+    let hexCodes = ['4ca77c'];
     const marcadores = {};
 
     function criarIconeAviao() {
+      const svgIcon = encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="black">
+          <path d="M2 16l10-4V3.5a1.5 1.5 0 0 1 3 0V12l10 4v2l-10-2v4l3 2v1l-4-1-4 1v-1l3-2v-4l-10 2v-2z"/>
+        </svg>
+      `);
       return L.icon({
-        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Airplane_silhouette.png/32px-Airplane_silhouette.png',
+        iconUrl: `data:image/svg+xml;charset=UTF-8,${svgIcon}`,
         iconSize: [32, 32],
         iconAnchor: [16, 16],
         className: 'icone-aviao'
@@ -145,7 +150,7 @@
 
     atualizarLista();
     buscarDados();
-    setInterval(buscarDados, 30000); // Atualiza a cada 30 segundos
+    setInterval(buscarDados, 30000);
   </script>
 </body>
 </html>
