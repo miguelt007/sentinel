@@ -4,10 +4,7 @@
   <meta charset="UTF-8" />
   <title>Voos Ativos com OpenSky</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     #map { height: 100vh; }
     .plane-icon { transform-origin: center center; }
@@ -18,7 +15,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map("map").setView([39.67604, -8.14577], 7); // Vila de Rei
+    const map = L.map("map").setView([39.67604, -8.14577], 8); // Vila de Rei
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
@@ -40,7 +37,8 @@
     }
 
     async function obterDadosOpenSky() {
-      const resposta = await fetch("https://opensky-network.org/api/states/all");
+      const url = "https://opensky-network.org/api/states/all?lamin=39&lomin=-9&lamax=41&lomax=-7";
+      const resposta = await fetch(url);
       const dados = await resposta.json();
       return dados.states || [];
     }
@@ -49,11 +47,9 @@
       const hexCodes = await carregarHexCodes();
       const estados = await obterDadosOpenSky();
 
-      hexCodes.forEach(hex => {
-        const estado = estados.find(e => e[0]?.toLowerCase() === hex);
-        if (estado && estado[6] !== null && estado[5] !== null) {
-          const [icao24, callsign, country, , lastContact, lon, lat, baroAlt, , velocity, heading] = estado;
-
+      estados.forEach(estado => {
+        const [icao24, callsign, country, , lastContact, lon, lat, baroAlt, , velocity, heading] = estado;
+        if (hexCodes.includes(icao24.toLowerCase()) && lat !== null && lon !== null) {
           const marker = L.marker([lat, lon], {
             icon: createRotatedIcon(heading || 0),
           }).addTo(map);
