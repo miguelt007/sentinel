@@ -55,8 +55,7 @@
     async function buscarDados(hexCodes) {
       for (const hex of hexCodes) {
         try {
-          const url = `https://opensky-network.org/api/states/all?icao24=${hex}`;
-          const resposta = await fetch(url);
+          const resposta = await fetch(`/api/opensky?hex=${hex}`);
           const dados = await resposta.json();
           const estado = dados.states && dados.states[0];
           if (!estado) continue;
@@ -99,7 +98,7 @@
         const dados = await resposta.json();
         const hexCodes = dados.hexCodes;
         buscarDados(hexCodes);
-        setInterval(() => buscarDados(hexCodes), 30000);
+        setInterval(() => buscarDados(hexCodes), 60000); // Atualiza a cada 60 segundos
       } catch (erro) {
         console.error("Erro ao carregar hexCodes.json:", erro);
       }
