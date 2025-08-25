@@ -2,77 +2,69 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Voos Ativos com AeroAPI</title>
+  <title>✈️ Voos Ativos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f4;
-      padding: 20px;
-    }
-    h1 {
-      color: #333;
+      padding: 2rem;
     }
     .voo {
       background: #fff;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-left: 5px solid #0078D7;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-left: 5px solid #0077cc;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .erro {
-      border-left: 5px solid #D70000;
+      background: #ffe0e0;
+      border-left: 5px solid #cc0000;
     }
   </style>
 </head>
 <body>
   <h1>✈️ Voos Ativos</h1>
-  <div id="voos-ativos">A carregar...</div>
+  <div id="voos"></div>
 
   <script>
-    const API_KEY = "jtGYiWbmsmetTGHMKvf0B2axN5qlKV0A"; // ← substitui pela tua chave da AeroAPI
+    const registos = ["CS-TNV", "G-RUKC", "CS-TPE"];
+    const token = "jtGYiWbmsmetTGHMKvf0B2axN5qlKV0A"; // substitui pelo teu token real
 
-    async function carregarRegistos() {
-      const resposta = await fetch("hexCodes.json");
-      const dados = await resposta.json();
-      return dados.registrations.map(r => r.toUpperCase());
-    }
-
-    async function getFlightData(registration) {
+    async function obterVoo(registo) {
       try {
-        const res = await fetch(`https://aeroapi.flightaware.com/aeroapi/flights/${registration}`, {
-          headers: { "x-apikey": API_KEY }
+        const resposta = await fetch(`https://aeroapi.flightaware.com/aeroapi/flights/${registo}`, {
+          headers: { Authorization: token }
         });
-        const data = await res.json();
-        return data.flights?.[0] || null;
-      } catch {
+        const data = await resposta.json();
+        const vooAtivo = data.flights?.find(v => v.status === "En Route" && v.last_position);
+        return vooAtivo || null;
+      } catch (erro) {
+        console.error(`Erro ao obter voo para ${registo}:`, erro);
         return null;
       }
     }
 
     async function mostrarVoos() {
-      const container = document.getElementById("voos-ativos");
-      container.innerHTML = "";
-
-      const registrations = await carregarRegistos();
-
-      for (const reg of registrations) {
-        const voo = await getFlightData(reg);
+      const container = document.getElementById("voos");
+      for (const registo of registos) {
+        const voo = await obterVoo(registo);
         const div = document.createElement("div");
-        div.classList.add("voo");
+        div.className = "voo";
 
-        if (!voo || !voo.last_position) {
+        if (voo) {
+          div.innerHTML = `
+            <strong>${registo}</strong><br>
+            Origem: ${voo.origin?.code || "Desconhecida"}<br>
+            Destino: ${voo.destination?.code || "Desconhecido"}<br>
+            Altitude: ${voo.last_position?.altitude} ft<br>
+            Velocidade: ${voo.last_position?.groundspeed} knots<br>
+            Atualizado: ${new Date(voo.last_position?.timestamp * 1000).toLocaleString()}
+          `;
+        } else {
           div.classList.add("erro");
-          div.textContent = `⚠️ ${reg}: nenhum voo ativo encontrado.`;
-          container.appendChild(div);
-          continue;
+          div.innerHTML = `⚠️ ${registo}: nenhum voo ativo encontrado.`;
         }
 
-        const pos = voo.last_position;
-        div.innerHTML = `
-          <strong>${voo.ident}</strong> (${reg})<br>
-          Origem: ${voo.origin?.code || "?"} → Destino: ${voo.destination?.code || "?"}<br>
-          Posição: ${pos.latitude}, ${pos.longitude}<br>
-          Altitude: ${pos.altitude} ft | Velocidade: ${pos.groundspeed} kt | Direção: ${pos.heading}°
-        `;
         container.appendChild(div);
       }
     }
