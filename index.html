@@ -10,7 +10,7 @@
   />
   <style>
     body { margin: 0; font-family: Arial, sans-serif; }
-    #mapa { height: 100vh; width: 100%; }
+    #mapa { height: 100vh; width: 100vw; }
     .icone-aviao {
       transition: transform 0.3s ease;
     }
@@ -21,21 +21,21 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const mapa = L.map('mapa').setView([38.736946, -9.142685], 6); // Lisboa
+    const mapa = L.map('mapa').setView([39.5, -8.0], 7); // Centro de Portugal
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
+      attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
 
-    const hexCodes = ['4ca77c', '3c4b26']; // Adiciona aqui os hex codes que queres seguir
+    const hexCodes = ['4ca77c', '3c4b26']; // Substitui pelos hex codes que queres seguir
     const marcadores = {};
 
-    function criarIconeAviao(angulo) {
+    function criarIconeAviao() {
       return L.icon({
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Airplane_silhouette.png/32px-Airplane_silhouette.png',
         iconSize: [32, 32],
         iconAnchor: [16, 16],
-        className: 'icone-aviao',
+        className: 'icone-aviao'
       });
     }
 
@@ -56,7 +56,7 @@
           if (!estado) continue;
 
           const [
-            icao24, callsign, originCountry, timePosition, lastContact,
+            , callsign, originCountry, , lastContact,
             longitude, latitude, baroAltitude, onGround, velocity, trueTrack
           ] = estado;
 
@@ -71,7 +71,7 @@
             Estado: ${onGround ? "No solo" : "Em voo"}
           `;
 
-          const icone = criarIconeAviao(trueTrack || 0);
+          const icone = criarIconeAviao();
 
           if (marcadores[hex]) {
             marcadores[hex].setLatLng([latitude, longitude]).setIcon(icone).setPopupContent(texto);
