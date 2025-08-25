@@ -2,19 +2,15 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <title>Voos Ativos</title>
+  <title>Voos Ativos com OpenSky</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
   <style>
-    #map {
-      height: 100vh;
-    }
-    .plane-icon {
-      transform-origin: center center;
-    }
+    #map { height: 100vh; }
+    .plane-icon { transform-origin: center center; }
   </style>
 </head>
 <body>
@@ -22,13 +18,12 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map("map").setView([47, -2], 5); // Centro aproximado da Europa
+    const map = L.map("map").setView([39.67604, -8.14577], 7); // Vila de Rei
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
     }).addTo(map);
 
-    // Função para criar ícone rotacionado
     function createRotatedIcon(angle) {
       return L.divIcon({
         className: "plane-icon",
@@ -38,42 +33,44 @@
       });
     }
 
-    // Dados dos voos
-    const flights = [
-      {
-        callsign: "RUK677D",
-        country: "United Kingdom",
-        lat: 49.5953,
-        lon: -4.0248,
-        altitude: 10973,
-        speed: 242,
-        heading: 10,
-      },
-      {
-        callsign: "TAP828",
-        country: "Portugal",
-        lat: 44.4172,
-        lon: 3.2699,
-        altitude: 10973,
-        speed: 235,
-        heading: 62,
-      },
-    ];
+    async function carregarHexCodes() {
+      const resposta = await fetch("hexCodes.json");
+      const dados = await resposta.json();
+      return dados.hexCodes.map(h => h.toLowerCase());
+    }
 
-    // Adiciona cada avião ao mapa
-    flights.forEach((flight) => {
-      const marker = L.marker([flight.lat, flight.lon], {
-        icon: createRotatedIcon(flight.heading),
-      }).addTo(map);
+    async function obterDadosOpenSky() {
+      const resposta = await fetch("https://opensky-network.org/api/states/all");
+      const dados = await resposta.json();
+      return dados.states || [];
+    }
 
-      marker.bindPopup(`
-        <strong>${flight.callsign}</strong><br/>
-        País: ${flight.country}<br/>
-        Altitude: ${flight.altitude} m<br/>
-        Velocidade: ${flight.speed} m/s<br/>
-        Direção: ${flight.heading}°
-      `);
-    });
+    async function mostrarVoosNoMapa() {
+      const hexCodes = await carregarHexCodes();
+      const estados = await obterDadosOpenSky();
+
+      hexCodes.forEach(hex => {
+        const estado = estados.find(e => e[0]?.toLowerCase() === hex);
+        if (estado && estado[6] !== null && estado[5] !== null) {
+          const [icao24, callsign, country, , lastContact, lon, lat, baroAlt, , velocity, heading] = estado;
+
+          const marker = L.marker([lat, lon], {
+            icon: createRotatedIcon(heading || 0),
+          }).addTo(map);
+
+          marker.bindPopup(`
+            <strong>${callsign?.trim() || "Sem callsign"}</strong><br/>
+            País: ${country}<br/>
+            Altitude: ${baroAlt ? Math.round(baroAlt) + " m" : "N/A"}<br/>
+            Velocidade: ${velocity ? Math.round(velocity) + " m/s" : "N/A"}<br/>
+            Direção: ${heading ? Math.round(heading) + "°" : "N/A"}<br/>
+            Último contacto: ${new Date(lastContact * 1000).toLocaleString()}
+          `);
+        }
+      });
+    }
+
+    mostrarVoosNoMapa();
   </script>
 </body>
 </html>
