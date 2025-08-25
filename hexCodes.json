@@ -1,6 +1,7 @@
-// hexCodes.js
-export const hexCodes = [
-  "4CA64E",
-  "4CA64F",
-  "4CA650",
-]
+{
+  "hexCodes": [
+    "407CAF",
+    "4952CD",
+    "4CA77F"
+  ]
+}
