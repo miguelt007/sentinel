@@ -2,32 +2,59 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8" />
-  <title>Mapa de Aviões em Tempo Real</title>
+  <title>Rastreador de Aeronaves</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body { margin: 0; font-family: Arial, sans-serif; }
     #mapa { height: 100vh; width: 100vw; }
+    #painel {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+      width: 200px;
+    }
+    input, button {
+      margin-top: 5px;
+      width: 100%;
+      padding: 6px;
+      font-size: 14px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 10px;
+    }
+    li {
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
     .icone-aviao {
       transition: transform 0.3s ease;
     }
   </style>
 </head>
 <body>
+  <div id="painel">
+    <h3>✈️ Hex Codes</h3>
+    <input type="text" id="novoHex" placeholder="Ex: 4ca77c" />
+    <button onclick="adicionarHex()">Adicionar</button>
+    <ul id="listaHex"></ul>
+  </div>
   <div id="mapa"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const mapa = L.map('mapa').setView([39.5, -8.0], 7); // Centro de Portugal
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(mapa);
 
-    const hexCodes = ['4ca77c', '3c4b26']; // Substitui pelos hex codes que queres seguir
+    let hexCodes = ['4ca77c']; // Hex codes iniciais
     const marcadores = {};
 
     function criarIconeAviao() {
@@ -44,6 +71,35 @@
       if (el) {
         el.style.transform = `rotate(${angulo}deg)`;
       }
+    }
+
+    function adicionarHex() {
+      const hex = document.getElementById("novoHex").value.trim().toLowerCase();
+      if (hex && !hexCodes.includes(hex)) {
+        hexCodes.push(hex);
+        atualizarLista();
+        buscarDados();
+      }
+      document.getElementById("novoHex").value = "";
+    }
+
+    function removerHex(hex) {
+      hexCodes = hexCodes.filter(h => h !== hex);
+      atualizarLista();
+      if (marcadores[hex]) {
+        mapa.removeLayer(marcadores[hex]);
+        delete marcadores[hex];
+      }
+    }
+
+    function atualizarLista() {
+      const ul = document.getElementById("listaHex");
+      ul.innerHTML = "";
+      hexCodes.forEach(hex => {
+        const li = document.createElement("li");
+        li.innerHTML = `${hex} <button onclick="removerHex('${hex}')">Remover</button>`;
+        ul.appendChild(li);
+      });
     }
 
     async function buscarDados() {
@@ -87,6 +143,7 @@
       }
     }
 
+    atualizarLista();
     buscarDados();
     setInterval(buscarDados, 30000); // Atualiza a cada 30 segundos
   </script>
