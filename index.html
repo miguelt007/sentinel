@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <title>Mapa OpenSky</title>
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <meta charset="UTF-8" />
+  <title>Voos Ativos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     #map { height: 100vh; }
     .plane-icon { transform-origin: center center; }
@@ -12,10 +12,13 @@
 </head>
 <body>
   <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const map = L.map('map').setView([39.67604, -8.14577], 8); // Vila de Rei
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
+    const map = L.map("map").setView([39.67604, -8.14577], 8); // Vila de Rei
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
     }).addTo(map);
 
     function createRotatedIcon(angle) {
@@ -33,21 +36,15 @@
       return dados.hexCodes.map(h => h.toLowerCase());
     }
 
-    async function obterDadosOpenSky() {
-      const username = ""; // opcional: coloca aqui o teu username
-      const password = ""; // opcional: coloca aqui a tua password
-      const headers = username && password
-        ? { "Authorization": "Basic " + btoa(username + ":" + password) }
-        : {};
-
-      const resposta = await fetch("https://opensky-network.org/api/states/all", { headers });
+    async function obterDadosDoServidor() {
+      const resposta = await fetch("/api/flights"); // <-- Chamada ao backend
       const dados = await resposta.json();
       return dados.states || [];
     }
 
     async function mostrarVoos() {
       const hexCodes = await carregarHexCodes();
-      const estados = await obterDadosOpenSky();
+      const estados = await obterDadosDoServidor();
 
       estados.forEach(estado => {
         const [icao24, callsign, country, , lastContact, lon, lat, baroAlt, , velocity, heading] = estado;
