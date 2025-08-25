@@ -2,73 +2,104 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Rastreador de Aeronave</title>
+  <title>Mapa de Aeronaves</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
-      padding: 20px;
+    body { margin: 0; font-family: Arial, sans-serif; }
+    #map { height: 100vh; }
+    #painel {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: white; padding: 10px;
+      border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      z-index: 1000;
     }
-    h1 {
-      color: #333;
-    }
-    #dados {
-      background-color: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 500px;
-    }
-    .erro {
-      color: red;
-    }
+    input, button { margin-top: 5px; width: 100%; }
   </style>
 </head>
 <body>
-  <h1>✈️ Rastreador de Aeronave</h1>
-  <p>A acompanhar aeronave com hex code: <strong>4ca77c</strong></p>
-  <div id="dados">A carregar dados...</div>
+  <div id="painel">
+    <h3>✈️ Hex Codes</h3>
+    <input type="text" id="novoHex" placeholder="Ex: 4ca77c" />
+    <button onclick="adicionarHex()">Adicionar</button>
+    <ul id="listaHex"></ul>
+  </div>
+  <div id="map"></div>
 
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    async function buscarDados() {
-      const hexCode = "4ca77c"; // Substitui pelo hex code da aeronave que queres seguir
-      const url = `https://opensky-network.org/api/states/all?icao24=${hexCode}`;
+    const mapa = L.map('map').setView([39.5, -8.0], 6); // Centro de Portugal
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(mapa);
 
-      try {
-        const resposta = await fetch(url);
-        if (!resposta.ok) throw new Error("Falha ao obter dados da API");
+    let hexCodes = ['4ca77c']; // Lista inicial
+    let marcadores = {};
 
-        const dados = await resposta.json();
-        const estado = dados.states && dados.states[0];
+    function adicionarHex() {
+      const hex = document.getElementById("novoHex").value.trim().toLowerCase();
+      if (hex && !hexCodes.includes(hex)) {
+        hexCodes.push(hex);
+        atualizarLista();
+        buscarDados();
+      }
+      document.getElementById("novoHex").value = "";
+    }
 
-        if (!estado) {
-          document.getElementById("dados").innerHTML = "<p class='erro'>Nenhum dado encontrado para esta aeronave.</p>";
-          return;
-        }
-
-        const [
-          icao24, callsign, originCountry, timePosition, lastContact,
-          longitude, latitude, baroAltitude, onGround, velocity
-        ] = estado;
-
-        const hora = new Date(lastContact * 1000).toLocaleTimeString();
-
-        document.getElementById("dados").innerHTML = `
-          <p><strong>Callsign:</strong> ${callsign || "N/A"}</p>
-          <p><strong>País de origem:</strong> ${originCountry}</p>
-          <p><strong>Latitude:</strong> ${latitude?.toFixed(5) || "N/A"}</p>
-          <p><strong>Longitude:</strong> ${longitude?.toFixed(5) || "N/A"}</p>
-          <p><strong>Altitude:</strong> ${baroAltitude ? baroAltitude.toFixed(0) + " m" : "N/A"}</p>
-          <p><strong>Velocidade:</strong> ${velocity ? velocity.toFixed(1) + " m/s" : "N/A"}</p>
-          <p><strong>Estado:</strong> ${onGround ? "No solo" : "Em voo"}</p>
-          <p><strong>Último contacto:</strong> ${hora}</p>
-        `;
-      } catch (erro) {
-        document.getElementById("dados").innerHTML = `<p class='erro'>Erro ao buscar dados: ${erro.message}</p>`;
-        console.error(erro);
+    function removerHex(hex) {
+      hexCodes = hexCodes.filter(h => h !== hex);
+      atualizarLista();
+      if (marcadores[hex]) {
+        mapa.removeLayer(marcadores[hex]);
+        delete marcadores[hex];
       }
     }
 
+    function atualizarLista() {
+      const ul = document.getElementById("listaHex");
+      ul.innerHTML = "";
+      hexCodes.forEach(hex => {
+        const li = document.createElement("li");
+        li.innerHTML = `${hex} <button onclick="removerHex('${hex}')">Remover</button>`;
+        ul.appendChild(li);
+      });
+    }
+
+    async function buscarDados() {
+      for (const hex of hexCodes) {
+        try {
+          const url = `https://opensky-network.org/api/states/all?icao24=${hex}`;
+          const res = await fetch(url);
+          const dados = await res.json();
+          const estado = dados.states && dados.states[0];
+          if (!estado) continue;
+
+          const [icao24, callsign, originCountry, timePosition, lastContact,
+                 longitude, latitude, baroAltitude, onGround, velocity] = estado;
+
+          if (!latitude || !longitude) continue;
+
+          const texto = `
+            <strong>${callsign || "Sem callsign"}</strong><br>
+            País: ${originCountry}<br>
+            Altitude: ${baroAltitude ? baroAltitude.toFixed(0) + " m" : "N/A"}<br>
+            Velocidade: ${velocity ? velocity.toFixed(1) + " m/s" : "N/A"}<br>
+            Estado: ${onGround ? "No solo" : "Em voo"}
+          `;
+
+          if (marcadores[hex]) {
+            marcadores[hex].setLatLng([latitude, longitude]).setPopupContent(texto);
+          } else {
+            const marcador = L.marker([latitude, longitude]).addTo(mapa).bindPopup(texto);
+            marcadores[hex] = marcador;
+          }
+        } catch (erro) {
+          console.error(`Erro ao buscar dados para ${hex}:`, erro);
+        }
+      }
+    }
+
+    atualizarLista();
     buscarDados();
     setInterval(buscarDados, 30000); // Atualiza a cada 30 segundos
   </script>
