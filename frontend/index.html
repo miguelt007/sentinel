@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sentinel - Mapa de Aviões</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>#map { height: 100vh; }</style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([39.676, -8.145], 7); // Vila de Rei
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    async function carregarAvioes() {
+      const res = await fetch('/opensky');
+      const avioes = await res.json();
+
+      avioes.forEach(aviao => {
+        L.marker([aviao.latitude, aviao.longitude])
+          .addTo(map)
+          .bindPopup(`<b>${aviao.callsign || 'Sem callsign'}</b><br>${aviao.origin_country}`);
+      });
+    }
+
+    carregarAvioes();
+    setInterval(carregarAvioes, 30000); // Atualiza a cada 30s
+  </script>
+</body>
+</html>
