@@ -205,7 +205,14 @@
           if (latitude && longitude) {
             const marker = L.marker([latitude, longitude], {
               icon: createDirectionIcon(heading, position_source)
-            }).bindPopup(`<strong>${callsign?.trim() || '—'}</strong><br>${origin_country}<br>Alt: ${baro_altitude?.toFixed(0) || '—'} m`);
+            }).bindPopup(`
+  <strong>ICAO24:</strong> ${icao24 || '—'}<br>
+  <strong>Última atualização:</strong> ${formatTime(last_contact)}<br>
+  <strong>Velocidade:</strong> ${toKmh(velocity)} km/h<br>
+  <strong>Taxa vertical:</strong> ${toKmh(vertical_rate)} km/h<br>
+  <strong>Transponder:</strong> ${formatTransponder(squawk)}<br>
+  <strong>Fonte da posição:</strong> ${formatPositionSource(position_source)}
+`);
             marker.addTo(map);
             markers.push(marker);
           }
