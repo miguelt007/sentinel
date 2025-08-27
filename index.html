@@ -3,26 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <title>Voos em Tempo Real - Vila de Rei</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+    }
+    #map {
+      flex: 1;
+      height: 100%;
+    }
+    .table-container {
+      flex: 1;
+      overflow-y: auto;
       padding: 20px;
     }
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 20px;
+      font-size: 12px;
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 8px;
+      padding: 6px;
       text-align: center;
     }
     th {
       background-color: #f2f2f2;
     }
     caption {
-      font-size: 1.5em;
+      font-size: 1.2em;
       margin-bottom: 10px;
     }
     img.flag {
@@ -33,34 +50,53 @@
   </style>
 </head>
 <body>
-  <h1>Voos num raio de 200 km de Vila de Rei</h1>
-  <p><em>Atualização automática a cada 30 segundos</em></p>
-  <table>
-    <caption>Aeronaves Ativas</caption>
-    <thead>
-      <tr>
-        <th>ICAO24</th>
-        <th>Chamada</th>
-        <th>País Origem</th>
-        <th>Última Pos.</th>
-        <th>Última Atual.</th>
-        <th>Longitude</th>
-        <th>Latitude</th>
-        <th>Altitude Bar. (m)</th>
-        <th>No Solo</th>
-        <th>Velocidade (km/h)</th>
-        <th>Taxa Vertical (km/h)</th>
-        <th>Transponder</th>
-        <th>Pos. Source</th>
-      </tr>
-    </thead>
-    <tbody id="flight-data">
-      <tr><td colspan="13">A carregar dados...</td></tr>
-    </tbody>
-  </table>
+  <div class="container">
+    <div id="map"></div>
+    <div class="table-container">
+      <h2>Voos num raio de 200 km de Vila de Rei</h2>
+      <p><em>Atualização automática a cada 30 segundos</em></p>
+      <table>
+        <caption>Aeronaves Ativas</caption>
+        <thead>
+          <tr>
+            <th>ICAO24</th>
+            <th>Chamada</th>
+            <th>País Origem</th>
+            <th>Última Pos.</th>
+            <th>Última Atual.</th>
+            <th>Longitude</th>
+            <th>Latitude</th>
+            <th>Altitude Bar. (m)</th>
+            <th>No Solo</th>
+            <th>Velocidade (km/h)</th>
+            <th>Taxa Vertical (km/h)</th>
+            <th>Transponder</th>
+            <th>Pos. Source</th>
+          </tr>
+        </thead>
+        <tbody id="flight-data">
+          <tr><td colspan="13">A carregar dados...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <script>
     const url = "https://opensky-network.org/api/states/all?lamin=37.8761&lamax=41.4761&lomin=-10.3272&lomax=-5.9272";
+    let map;
+    let markers = [];
+
+    function initMap() {
+      map = L.map('map').setView([39.6761, -8.1272], 8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+    }
+
+    function clearMarkers() {
+      markers.forEach(marker => map.removeLayer(marker));
+      markers = [];
+    }
 
     async function getCountryCode(name) {
       try {
@@ -111,6 +147,7 @@
         const data = await response.json();
         const tbody = document.getElementById('flight-data');
         tbody.innerHTML = '';
+        clearMarkers();
 
         if (!data.states || data.states.length === 0) {
           tbody.innerHTML = '<tr><td colspan="13">Nenhum voo encontrado na área.</td></tr>';
@@ -144,6 +181,13 @@
             </tr>
           `;
           tbody.innerHTML += row;
+
+          if (latitude && longitude) {
+            const marker = L.marker([latitude, longitude])
+              .bindPopup(`<strong>${callsign?.trim() || '—'}</strong><br>${origin_country}<br>Alt: ${baro_altitude?.toFixed(0) || '—'} m`);
+            marker.addTo(map);
+            markers.push(marker);
+          }
         }
       } catch (error) {
         document.getElementById('flight-data').innerHTML = '<tr><td colspan="13">Erro ao carregar dados.</td></tr>';
@@ -151,6 +195,7 @@
       }
     }
 
+    initMap();
     fetchFlightData();
     setInterval(fetchFlightData, 30000);
   </script>
