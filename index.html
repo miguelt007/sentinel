@@ -97,7 +97,7 @@
     }
 
     function formatTransponder(code) {
-      if (!/^[0-9]{4}$/.test(code)) return '—';
+      if (!code || typeof code !== 'string' || !/^[0-9]{4}$/.test(code)) return '—';
       const alerts = {
         "7500": "🔴 Interferência",
         "7600": "🟠 Falha de rádio",
