@@ -142,7 +142,7 @@
       return sources[code] ?? "—";
     }
 
-    const planeIcon = L.icon({
+    const createPlaneIcon = () => L.icon({
       iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Red_triangle_pointed_up.svg',
       iconSize: [32, 32],
       iconAnchor: [16, 16],
@@ -192,7 +192,7 @@
 
           if (latitude && longitude) {
             const marker = L.marker([latitude, longitude], {
-              icon: planeIcon,
+              icon: createPlaneIcon(),
               rotationAngle: heading || 0,
               rotationOrigin: 'center center'
             }).bindPopup(`<strong>${callsign?.trim() || '—'}</strong><br>${origin_country}<br>Alt: ${baro_altitude?.toFixed(0) || '—'} m`);
