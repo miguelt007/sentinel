@@ -68,15 +68,12 @@
 
     function getFlagIcon(countryName) {
       if (!countryName) return `<span title="Desconhecido">🌐</span>`;
-
       const normalized = countryName.trim().toLowerCase();
-
       const aliases = {
         "usa": "us", "united states": "us", "uk": "gb", "united kingdom": "gb",
         "kingdom of the netherlands": "nl", "czech republic": "cz",
         "switzerland": "ch", "malta": "mt", "argentina": "ar"
       };
-
       const countryCodes = {
         "at": "Austria", "be": "Belgium", "bg": "Bulgaria", "hr": "Croatia",
         "cz": "Czech Republic", "fr": "France", "de": "Germany", "ie": "Ireland",
@@ -84,11 +81,9 @@
         "es": "Spain", "tr": "Turkey", "gb": "United Kingdom", "us": "United States",
         "ar": "Argentina", "mt": "Malta", "ch": "Switzerland"
       };
-
       const code = aliases[normalized] || Object.keys(countryCodes).find(
         key => countryCodes[key].toLowerCase() === normalized
       );
-
       if (!code) return `<span title="${countryName}">🌐</span>`;
       return `<img class="flag" src="https://flagcdn.com/24x18/${code}.png" alt="${countryName}" title="${countryName}">`;
     }
@@ -102,7 +97,13 @@
     }
 
     function formatTransponder(code) {
-      return /^[0-9]{4}$/.test(code) ? code : '—';
+      if (!/^[0-9]{4}$/.test(code)) return '—';
+      const alerts = {
+        "7500": "🔴 Interferência",
+        "7600": "🟠 Falha de rádio",
+        "7700": "🟡 Emergência"
+      };
+      return alerts[code] ? `<span title="${alerts[code]}">${code}</span>` : code;
     }
 
     async function fetchFlightData() {
