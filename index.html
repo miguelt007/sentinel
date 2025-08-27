@@ -143,7 +143,7 @@
     }
 
     const planeIcon = L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconUrl: 'https://raw.githubusercontent.com/johan/world.geo.json/master/img/airplane.png',
       iconSize: [32, 32],
       iconAnchor: [16, 16],
       popupAnchor: [0, -16]
@@ -191,7 +191,7 @@
           tbody.innerHTML += row;
 
           if (latitude && longitude) {
-            const marker = L.marker([latitude, longitude], {
+            const marker = L.rotatedMarker([latitude, longitude], {
               icon: planeIcon,
               rotationAngle: heading || 0,
               rotationOrigin: 'center center'
