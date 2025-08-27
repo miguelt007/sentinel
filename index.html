@@ -206,6 +206,9 @@
             const marker = L.marker([latitude, longitude], {
               icon: createDirectionIcon(heading, position_source)
             }).bindPopup(`
+  <strong>Chamada:</strong> ${callsign?.trim() || '—'}<br>
+  <strong>País de origem:</strong> ${origin_country}<br>
+  <strong>Altitude barométrica:</strong> ${baro_altitude?.toFixed(0) || '—'} m<br>
   <strong>ICAO24:</strong> ${icao24 || '—'}<br>
   <strong>Última atualização:</strong> ${formatTime(last_contact)}<br>
   <strong>Velocidade:</strong> ${toKmh(velocity)} km/h<br>
