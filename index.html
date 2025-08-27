@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Dados de Voos - OpenSky</title>
+  <title>Voos em Tempo Real - Vila de Rei</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h1>Dados de Voos em Tempo Real</h1>
+  <h1>Voos num raio de 200 km de Vila de Rei</h1>
   <table>
     <caption>Aeronaves Ativas</caption>
     <thead>
@@ -55,39 +55,56 @@
 
   <script>
     async function fetchFlightData() {
-      const response = await fetch('https://opensky-network.org/api/states/all');
-      const data = await response.json();
-      const tbody = document.getElementById('flight-data');
-      tbody.innerHTML = '';
+      const lamin = 37.8761;
+      const lamax = 41.4761;
+      const lomin = -10.3272;
+      const lomax = -5.9272;
 
-      data.states.slice(0, 10).forEach(state => {
-        const [
-          icao24, callsign, origin_country, time_position, last_contact,
-          longitude, latitude, baro_altitude, on_ground, velocity,
-          vertical_rate, , , , , transponder_code, , position_source
-        ] = state;
+      const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax}`;
 
-        const formatTime = ts => ts ? new Date(ts * 1000).toLocaleTimeString('pt-PT') : '—';
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const tbody = document.getElementById('flight-data');
+        tbody.innerHTML = '';
 
-        const row = `
-          <tr>
-            <td>${icao24 || '—'}</td>
-            <td>${callsign?.trim() || '—'}</td>
-            <td>${origin_country || '—'}</td>
-            <td>${formatTime(time_position)}</td>
-            <td>${formatTime(last_contact)}</td>
-            <td>${longitude?.toFixed(4) || '—'}</td>
-            <td>${latitude?.toFixed(4) || '—'}</td>
-            <td>${baro_altitude?.toFixed(2) || '—'}</td>
-            <td>${on_ground}</td>
-            <td>${velocity?.toFixed(2) || '—'}</td>
-            <td>${vertical_rate?.toFixed(2) || '—'}</td>
-            <td>${transponder_code || '—'}</td>
-            <td>${position_source}</td>
-          </tr>
-        `;
-        tbody.innerHTML += row;
-      });
+        if (!data.states || data.states.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="13">Nenhum voo encontrado na área.</td></tr>';
+          return;
+        }
+
+        data.states.forEach(state => {
+          const [
+            icao24, callsign, origin_country, time_position, last_contact,
+            longitude, latitude, baro_altitude, on_ground, velocity,
+            vertical_rate, , , , , transponder_code, , position_source
+          ] = state;
+
+          const formatTime = ts => ts ? new Date(ts * 1000).toLocaleTimeString('pt-PT') : '—';
+
+          const row = `
+            <tr>
+              <td>${icao24 || '—'}</td>
+              <td>${callsign?.trim() || '—'}</td>
+              <td>${origin_country || '—'}</td>
+              <td>${formatTime(time_position)}</td>
+              <td>${formatTime(last_contact)}</td>
+              <td>${longitude?.toFixed(4) || '—'}</td>
+              <td>${latitude?.toFixed(4) || '—'}</td>
+              <td>${baro_altitude?.toFixed(2) || '—'}</td>
+              <td>${on_ground}</td>
+              <td>${velocity?.toFixed(2) || '—'}</td>
+              <td>${vertical_rate?.toFixed(2) || '—'}</td>
+              <td>${transponder_code || '—'}</td>
+              <td>${position_source}</td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+        });
+      } catch (error) {
+        document.getElementById('flight-data').innerHTML = '<tr><td colspan="13">Erro ao carregar dados.</td></tr>';
+        console.error('Erro ao buscar dados da API:', error);
+      }
     }
 
     fetchFlightData();
