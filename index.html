@@ -5,7 +5,7 @@
   <title>Voos em Tempo Real - Vila de Rei</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://rawcdn.githack.com/bbecquet/Leaflet.RotatedMarker/master/leaflet.rotatedMarker.js"></script>
+  <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -191,7 +191,7 @@
           tbody.innerHTML += row;
 
           if (latitude && longitude) {
-            const marker = L.rotatedMarker([latitude, longitude], {
+            const marker = L.marker([latitude, longitude], {
               icon: planeIcon,
               rotationAngle: heading || 0,
               rotationOrigin: 'center center'
