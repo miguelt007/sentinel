@@ -47,6 +47,16 @@
       height: 18px;
       border-radius: 2px;
     }
+    .callsign-label {
+      background-color: rgba(255, 255, 255, 0.85);
+      color: #000;
+      font-weight: bold;
+      font-size: 11px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+    }
   </style>
 </head>
 <body>
@@ -205,17 +215,25 @@
           if (latitude && longitude) {
             const marker = L.marker([latitude, longitude], {
               icon: createDirectionIcon(heading, position_source)
-            }).bindPopup(`
-  <strong>Chamada:</strong> ${callsign?.trim() || '—'}<br>
-  <strong>País de origem:</strong> ${origin_country}<br>
-  <strong>Altitude barométrica:</strong> ${baro_altitude?.toFixed(0) || '—'} m<br>
-  <strong>ICAO24:</strong> ${icao24 || '—'}<br>
-  <strong>Última atualização:</strong> ${formatTime(last_contact)}<br>
-  <strong>Velocidade:</strong> ${toKmh(velocity)} km/h<br>
-  <strong>Taxa vertical:</strong> ${toKmh(vertical_rate)} km/h<br>
-  <strong>Transponder:</strong> ${formatTransponder(squawk)}<br>
-  <strong>Fonte da posição:</strong> ${formatPositionSource(position_source)}
-`);
+            })
+            .bindPopup(`
+              <strong>Chamada:</strong> ${callsign?.trim() || '—'}<br>
+              <strong>País de origem:</strong> ${origin_country}<br>
+              <strong>Altitude barométrica:</strong> ${baro_altitude?.toFixed(0) || '—'} m<br>
+              <strong>ICAO24:</strong> ${icao24 || '—'}<br>
+              <strong>Última atualização:</strong> ${formatTime(last_contact)}<br>
+              <strong>Velocidade:</strong> ${toKmh(velocity)} km/h<br>
+              <strong>Taxa vertical:</strong> ${toKmh(vertical_rate)} km/h<br>
+              <strong>Transponder:</strong> ${formatTransponder(squawk)}<br>
+              <strong>Fonte da posição:</strong> ${formatPositionSource(position_source)}
+            `)
+            .bindTooltip(callsign?.trim() || '—', {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -16],
+              className: 'callsign-label'
+            });
+
             marker.addTo(map);
             markers.push(marker);
           }
