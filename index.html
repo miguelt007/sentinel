@@ -142,17 +142,12 @@
       return sources[code] ?? "—";
     }
 
-    function createDirectionIcon() {
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-          <rect x="12" y="12" width="8" height="8" fill="black" />
-          <line x1="16" y1="16" x2="16" y2="0" stroke="red" stroke-width="2" />
-        </svg>
-      `;
-      const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(svgBlob);
-      return url;
-    }
+    const planeIcon = L.icon({
+      iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Red_triangle_pointed_up.svg',
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -16]
+    });
 
     async function fetchFlightData() {
       try {
@@ -166,8 +161,6 @@
           tbody.innerHTML = '<tr><td colspan="13">Nenhum voo encontrado na área.</td></tr>';
           return;
         }
-
-        const iconUrl = createDirectionIcon();
 
         for (const state of data.states) {
           const [
@@ -198,15 +191,8 @@
           tbody.innerHTML += row;
 
           if (latitude && longitude) {
-            const icon = L.icon({
-              iconUrl: iconUrl,
-              iconSize: [32, 32],
-              iconAnchor: [16, 16],
-              popupAnchor: [0, -16]
-            });
-
             const marker = L.marker([latitude, longitude], {
-              icon: icon,
+              icon: planeIcon,
               rotationAngle: heading || 0,
               rotationOrigin: 'center center'
             }).bindPopup(`<strong>${callsign?.trim() || '—'}</strong><br>${origin_country}<br>Alt: ${baro_altitude?.toFixed(0) || '—'} m`);
