@@ -5,6 +5,7 @@
   <title>Voos em Tempo Real - Vila de Rei</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://rawcdn.githack.com/bbecquet/Leaflet.RotatedMarker/master/leaflet.rotatedMarker.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -53,7 +54,7 @@
   <div class="container">
     <div id="map"></div>
     <div class="table-container">
-      <h2>Voos num raio de 200 km de Vila de Rei</h2>
+      <h2>Voos num raio alargado de Vila de Rei</h2>
       <p><em>Atualização automática a cada 30 segundos</em></p>
       <table>
         <caption>Aeronaves Ativas</caption>
@@ -87,7 +88,7 @@
     let markers = [];
 
     function initMap() {
-      map = L.map('map').setView([39.6761, -8.1272], 8);
+      map = L.map('map').setView([39.6761, -8.1272], 7);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
       }).addTo(map);
@@ -141,6 +142,13 @@
       return sources[code] ?? "—";
     }
 
+    const planeIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -16]
+    });
+
     async function fetchFlightData() {
       try {
         const response = await fetch(url);
@@ -158,7 +166,7 @@
           const [
             icao24, callsign, origin_country, time_position, last_contact,
             longitude, latitude, baro_altitude, on_ground, velocity,
-            vertical_rate, , , , transponder_code, , position_source
+            heading, vertical_rate, , , , transponder_code, , position_source
           ] = state;
 
           const flagHTML = await getFlagIcon(origin_country);
@@ -183,8 +191,11 @@
           tbody.innerHTML += row;
 
           if (latitude && longitude) {
-            const marker = L.marker([latitude, longitude])
-              .bindPopup(`<strong>${callsign?.trim() || '—'}</strong><br>${origin_country}<br>Alt: ${baro_altitude?.toFixed(0) || '—'} m`);
+            const marker = L.marker([latitude, longitude], {
+              icon: planeIcon,
+              rotationAngle: heading || 0,
+              rotationOrigin: 'center center'
+            }).bindPopup(`<strong>${callsign?.trim() || '—'}</strong><br>${origin_country}<br>Alt: ${baro_altitude?.toFixed(0) || '—'} m`);
             marker.addTo(map);
             markers.push(marker);
           }
