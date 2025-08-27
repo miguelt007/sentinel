@@ -66,17 +66,35 @@
     const lomax = -5.9272;
     const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax}`;
 
-    const countryCodes = {
-      "Austria": "at", "Belgium": "be", "Bulgaria": "bg", "Croatia": "hr",
-      "Czech Republic": "cz", "France": "fr", "Germany": "de", "Ireland": "ie",
-      "Italy": "it", "Netherlands": "nl", "Kingdom of the Netherlands": "nl",
-      "Poland": "pl", "Portugal": "pt", "Spain": "es", "Turkey": "tr",
-      "United Kingdom": "gb", "UK": "gb", "United States": "us", "USA": "us",
-      "Argentina": "ar", "Malta": "mt"
-    };
-
     function getFlagIcon(countryName) {
-      const code = countryCodes[countryName];
+      if (!countryName) return `<span title="Desconhecido">🌐</span>`;
+
+      const normalized = countryName.trim().toLowerCase();
+
+      const aliases = {
+        "usa": "us",
+        "united states": "us",
+        "uk": "gb",
+        "united kingdom": "gb",
+        "kingdom of the netherlands": "nl",
+        "czech republic": "cz",
+        "switzerland": "ch",
+        "malta": "mt",
+        "argentina": "ar"
+      };
+
+      const countryCodes = {
+        "at": "Austria", "be": "Belgium", "bg": "Bulgaria", "hr": "Croatia",
+        "cz": "Czech Republic", "fr": "France", "de": "Germany", "ie": "Ireland",
+        "it": "Italy", "nl": "Netherlands", "pl": "Poland", "pt": "Portugal",
+        "es": "Spain", "tr": "Turkey", "gb": "United Kingdom", "us": "United States",
+        "ar": "Argentina", "mt": "Malta", "ch": "Switzerland"
+      };
+
+      const code = aliases[normalized] || Object.keys(countryCodes).find(
+        key => countryCodes[key].toLowerCase() === normalized
+      );
+
       if (!code) return `<span title="${countryName}">🌐</span>`;
       return `<img class="flag" src="https://flagcdn.com/24x18/${code}.png" alt="${countryName}" title="${countryName}">`;
     }
