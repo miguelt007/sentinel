@@ -141,13 +141,14 @@
       return sources[code] ?? "—";
     }
 
-    function createDirectionIcon(heading) {
+    function createDirectionIcon(heading, position_source) {
       const rotation = heading || 0;
+      const lineColor = position_source === 2 ? 'lime' : 'red';
       const html = `
         <div style="transform: rotate(${rotation}deg); width: 32px; height: 32px;">
           <svg width="32" height="32" viewBox="0 0 32 32">
             <rect x="12" y="12" width="8" height="8" fill="black" />
-            <line x1="16" y1="16" x2="16" y2="0" stroke="red" stroke-width="2" />
+            <line x1="16" y1="16" x2="16" y2="0" stroke="${lineColor}" stroke-width="2" />
           </svg>
         </div>
       `;
@@ -203,7 +204,7 @@
 
           if (latitude && longitude) {
             const marker = L.marker([latitude, longitude], {
-              icon: createDirectionIcon(heading)
+              icon: createDirectionIcon(heading, position_source)
             }).bindPopup(`<strong>${callsign?.trim() || '—'}</strong><br>${origin_country}<br>Alt: ${baro_altitude?.toFixed(0) || '—'} m`);
             marker.addTo(map);
             markers.push(marker);
