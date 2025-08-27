@@ -123,7 +123,7 @@
     }
 
     function formatTransponder(code) {
-      if (!code || typeof code !== 'string' || !/^[0-9]{4}$/.test(code)) return '—';
+      if (!code || typeof code !== 'string') return '—';
       const alerts = {
         "7500": "🔴 Interferência",
         "7600": "🟠 Falha de rádio",
@@ -174,11 +174,11 @@
 
         for (const state of data.states) {
           const [
-  icao24, callsign, origin_country, time_position, last_contact,
-  longitude, latitude, baro_altitude, on_ground, velocity,
-  heading, vertical_rate, sensors, geo_altitude, squawk,
-  transponder_code, spi, position_source
-] = state;
+            icao24, callsign, origin_country, time_position, last_contact,
+            longitude, latitude, baro_altitude, on_ground, velocity,
+            heading, vertical_rate, sensors, geo_altitude, squawk,
+            spi, position_source
+          ] = state;
 
           const flagHTML = await getFlagIcon(origin_country);
 
@@ -195,7 +195,7 @@
               <td>${on_ground}</td>
               <td>${toKmh(velocity)}</td>
               <td>${toKmh(vertical_rate)}</td>
-              <td>${formatTransponder(transponder_code)}</td>
+              <td>${formatTransponder(squawk)}</td>
               <td>${formatPositionSource(position_source)}</td>
             </tr>
           `;
