@@ -72,14 +72,14 @@
       const aliases = {
         "usa": "us", "united states": "us", "uk": "gb", "united kingdom": "gb",
         "kingdom of the netherlands": "nl", "czech republic": "cz",
-        "switzerland": "ch", "malta": "mt", "argentina": "ar"
+        "switzerland": "ch", "malta": "mt", "argentina": "ar", "brazil": "br", "luxembourg": "lu"
       };
       const countryCodes = {
         "at": "Austria", "be": "Belgium", "bg": "Bulgaria", "hr": "Croatia",
         "cz": "Czech Republic", "fr": "France", "de": "Germany", "ie": "Ireland",
         "it": "Italy", "nl": "Netherlands", "pl": "Poland", "pt": "Portugal",
         "es": "Spain", "tr": "Turkey", "gb": "United Kingdom", "us": "United States",
-        "ar": "Argentina", "mt": "Malta", "ch": "Switzerland"
+        "ar": "Argentina", "mt": "Malta", "ch": "Switzerland", "br": "Brazil", "lu": "Luxembourg"
       };
       const code = aliases[normalized] || Object.keys(countryCodes).find(
         key => countryCodes[key].toLowerCase() === normalized
