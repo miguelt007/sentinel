@@ -96,6 +96,15 @@
       return alerts[code] ? `<span title="${alerts[code]}">${code}</span>` : code;
     }
 
+    function formatPositionSource(code) {
+      const sources = {
+        0: "ADS-B",
+        1: "ASTERIX",
+        2: "MLAT"
+      };
+      return sources[code] ?? "—";
+    }
+
     async function fetchFlightData() {
       try {
         const response = await fetch(url);
@@ -131,7 +140,7 @@
               <td>${toKmh(velocity)}</td>
               <td>${toKmh(vertical_rate)}</td>
               <td>${formatTransponder(transponder_code)}</td>
-              <td>${position_source}</td>
+              <td>${formatPositionSource(position_source)}</td>
             </tr>
           `;
           tbody.innerHTML += row;
