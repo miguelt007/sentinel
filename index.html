@@ -5,7 +5,6 @@
   <title>Voos em Tempo Real - Vila de Rei</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -142,12 +141,23 @@
       return sources[code] ?? "—";
     }
 
-    const createPlaneIcon = () => L.icon({
-      iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Red_triangle_pointed_up.svg',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16]
-    });
+    function createDirectionIcon(heading) {
+      const rotation = heading || 0;
+      const html = `
+        <div style="transform: rotate(${rotation}deg); width: 32px; height: 32px;">
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <rect x="12" y="12" width="8" height="8" fill="black" />
+            <line x1="16" y1="16" x2="16" y2="0" stroke="red" stroke-width="2" />
+          </svg>
+        </div>
+      `;
+      return L.divIcon({
+        className: '',
+        html: html,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+    }
 
     async function fetchFlightData() {
       try {
@@ -192,9 +202,7 @@
 
           if (latitude && longitude) {
             const marker = L.marker([latitude, longitude], {
-              icon: createPlaneIcon(),
-              rotationAngle: heading || 0,
-              rotationOrigin: 'center center'
+              icon: createDirectionIcon(heading)
             }).bindPopup(`<strong>${callsign?.trim() || '—'}</strong><br>${origin_country}<br>Alt: ${baro_altitude?.toFixed(0) || '—'} m`);
             marker.addTo(map);
             markers.push(marker);
