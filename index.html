@@ -60,30 +60,23 @@
   </table>
 
   <script>
-    const lamin = 37.8761;
-    const lamax = 41.4761;
-    const lomin = -10.3272;
-    const lomax = -5.9272;
-    const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax}`;
+    const url = "https://opensky-network.org/api/states/all?lamin=37.8761&lamax=41.4761&lomin=-10.3272&lomax=-5.9272";
+
+    function getCountryCode(name) {
+      const isoMap = {
+        "argentina": "ar", "austria": "at", "belgium": "be", "brazil": "br",
+        "bulgaria": "bg", "canada": "ca", "chile": "cl", "croatia": "hr",
+        "czech republic": "cz", "france": "fr", "germany": "de", "ireland": "ie",
+        "italy": "it", "luxembourg": "lu", "lithuania": "lt", "malta": "mt",
+        "netherlands": "nl", "poland": "pl", "portugal": "pt", "spain": "es",
+        "switzerland": "ch", "turkey": "tr", "united kingdom": "gb",
+        "uk": "gb", "united states": "us", "usa": "us"
+      };
+      return isoMap[name.trim().toLowerCase()] || null;
+    }
 
     function getFlagIcon(countryName) {
-      if (!countryName) return `<span title="Desconhecido">🌐</span>`;
-      const normalized = countryName.trim().toLowerCase();
-      const aliases = {
-        "usa": "us", "united states": "us", "uk": "gb", "united kingdom": "gb",
-        "kingdom of the netherlands": "nl", "czech republic": "cz",
-        "switzerland": "ch", "malta": "mt", "argentina": "ar", "brazil": "br", "luxembourg": "lu", "canada": "ca"
-      };
-      const countryCodes = {
-        "at": "Austria", "be": "Belgium", "bg": "Bulgaria", "hr": "Croatia",
-        "cz": "Czech Republic", "fr": "France", "de": "Germany", "ie": "Ireland",
-        "it": "Italy", "nl": "Netherlands", "pl": "Poland", "pt": "Portugal",
-        "es": "Spain", "tr": "Turkey", "gb": "United Kingdom", "us": "United States",
-        "ar": "Argentina", "mt": "Malta", "ch": "Switzerland", "br": "Brazil", "lu": "Luxembourg", "ca": "Canada"
-      };
-      const code = aliases[normalized] || Object.keys(countryCodes).find(
-        key => countryCodes[key].toLowerCase() === normalized
-      );
+      const code = getCountryCode(countryName);
       if (!code) return `<span title="${countryName}">🌐</span>`;
       return `<img class="flag" src="https://flagcdn.com/24x18/${code}.png" alt="${countryName}" title="${countryName}">`;
     }
