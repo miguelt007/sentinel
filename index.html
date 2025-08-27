@@ -72,15 +72,9 @@
       const normalized = countryName.trim().toLowerCase();
 
       const aliases = {
-        "usa": "us",
-        "united states": "us",
-        "uk": "gb",
-        "united kingdom": "gb",
-        "kingdom of the netherlands": "nl",
-        "czech republic": "cz",
-        "switzerland": "ch",
-        "malta": "mt",
-        "argentina": "ar"
+        "usa": "us", "united states": "us", "uk": "gb", "united kingdom": "gb",
+        "kingdom of the netherlands": "nl", "czech republic": "cz",
+        "switzerland": "ch", "malta": "mt", "argentina": "ar"
       };
 
       const countryCodes = {
@@ -105,6 +99,10 @@
 
     function toKmh(val) {
       return val != null ? (val * 3.6).toFixed(2) : '—';
+    }
+
+    function formatTransponder(code) {
+      return /^[0-9]{4}$/.test(code) ? code : '—';
     }
 
     async function fetchFlightData() {
@@ -139,7 +137,7 @@
               <td>${on_ground}</td>
               <td>${toKmh(velocity)}</td>
               <td>${toKmh(vertical_rate)}</td>
-              <td>${transponder_code || '—'}</td>
+              <td>${formatTransponder(transponder_code)}</td>
               <td>${position_source}</td>
             </tr>
           `;
