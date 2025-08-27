@@ -74,10 +74,7 @@
             <th>País Origem</th>
             <th>Última Pos.</th>
             <th>Última Atual.</th>
-            <th>Longitude</th>
-            <th>Latitude</th>
             <th>Altitude Bar. (m)</th>
-            <th>No Solo</th>
             <th>Velocidade (km/h)</th>
             <th>Taxa Vertical (km/h)</th>
             <th>Transponder</th>
@@ -85,7 +82,7 @@
           </tr>
         </thead>
         <tbody id="flight-data">
-          <tr><td colspan="13">A carregar dados...</td></tr>
+          <tr><td colspan="10">A carregar dados...</td></tr>
         </tbody>
       </table>
     </div>
@@ -179,7 +176,7 @@
         clearMarkers();
 
         if (!data.states || data.states.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="13">Nenhum voo encontrado na área.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10">Nenhum voo encontrado na área.</td></tr>';
           return;
         }
 
@@ -200,10 +197,7 @@
               <td>${flagHTML}</td>
               <td>${formatTime(time_position)}</td>
               <td>${formatTime(last_contact)}</td>
-              <td>${longitude?.toFixed(4) || '—'}</td>
-              <td>${latitude?.toFixed(4) || '—'}</td>
               <td>${baro_altitude?.toFixed(2) || '—'}</td>
-              <td>${on_ground}</td>
               <td>${toKmh(velocity)}</td>
               <td>${toKmh(vertical_rate)}</td>
               <td>${formatTransponder(squawk)}</td>
