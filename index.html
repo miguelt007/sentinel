@@ -29,6 +29,7 @@
 </head>
 <body>
   <h1>Voos num raio de 200 km de Vila de Rei</h1>
+  <p><em>Atualização automática a cada 30 segundos</em></p>
   <table>
     <caption>Aeronaves Ativas</caption>
     <thead>
@@ -54,14 +55,13 @@
   </table>
 
   <script>
+    const lamin = 37.8761;
+    const lamax = 41.4761;
+    const lomin = -10.3272;
+    const lomax = -5.9272;
+    const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax}`;
+
     async function fetchFlightData() {
-      const lamin = 37.8761;
-      const lamax = 41.4761;
-      const lomin = -10.3272;
-      const lomax = -5.9272;
-
-      const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax}`;
-
       try {
         const response = await fetch(url);
         const data = await response.json();
@@ -107,7 +107,9 @@
       }
     }
 
+    // Atualiza a cada 30 segundos
     fetchFlightData();
+    setInterval(fetchFlightData, 30000);
   </script>
 </body>
 </html>
