@@ -174,10 +174,11 @@
 
         for (const state of data.states) {
           const [
-            icao24, callsign, origin_country, time_position, last_contact,
-            longitude, latitude, baro_altitude, on_ground, velocity,
-            heading, vertical_rate, , , , transponder_code, , position_source
-          ] = state;
+  icao24, callsign, origin_country, time_position, last_contact,
+  longitude, latitude, baro_altitude, on_ground, velocity,
+  heading, vertical_rate, sensors, geo_altitude, squawk,
+  transponder_code, spi, position_source
+] = state;
 
           const flagHTML = await getFlagIcon(origin_country);
 
