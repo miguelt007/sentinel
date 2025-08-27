@@ -43,8 +43,8 @@
         <th>Latitude</th>
         <th>Altitude Bar. (m)</th>
         <th>No Solo</th>
-        <th>Velocidade (m/s)</th>
-        <th>Taxa Vertical (m/s)</th>
+        <th>Velocidade (km/h)</th>
+        <th>Taxa Vertical (km/h)</th>
         <th>Transponder</th>
         <th>Pos. Source</th>
       </tr>
@@ -81,6 +81,7 @@
           ] = state;
 
           const formatTime = ts => ts ? new Date(ts * 1000).toLocaleTimeString('pt-PT') : '—';
+          const toKmh = val => val != null ? (val * 3.6).toFixed(2) : '—';
 
           const row = `
             <tr>
@@ -93,8 +94,8 @@
               <td>${latitude?.toFixed(4) || '—'}</td>
               <td>${baro_altitude?.toFixed(2) || '—'}</td>
               <td>${on_ground}</td>
-              <td>${velocity?.toFixed(2) || '—'}</td>
-              <td>${vertical_rate?.toFixed(2) || '—'}</td>
+              <td>${toKmh(velocity)}</td>
+              <td>${toKmh(vertical_rate)}</td>
               <td>${transponder_code || '—'}</td>
               <td>${position_source}</td>
             </tr>
@@ -107,7 +108,6 @@
       }
     }
 
-    // Atualiza a cada 30 segundos
     fetchFlightData();
     setInterval(fetchFlightData, 30000);
   </script>
